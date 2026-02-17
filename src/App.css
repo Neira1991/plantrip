@@ -1,13 +1,4 @@
-.app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  position: relative;
-  overflow: hidden;
-}
+/* ── Shared styles across pages ── */
 
 .background-flag {
   position: absolute;
@@ -21,12 +12,8 @@
 }
 
 @keyframes flagFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 0.3;
-  }
+  from { opacity: 0; }
+  to { opacity: 0.3; }
 }
 
 .app-header {
@@ -76,6 +63,243 @@
   color: #ccc;
 }
 
+/* ── Status badges (shared) ── */
+
+.status-planning {
+  background: rgba(102, 126, 234, 0.15);
+  color: #7e94ff;
+}
+
+.status-booked {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+}
+
+.status-completed {
+  background: rgba(149, 165, 166, 0.15);
+  color: #95a5a6;
+}
+
+.status-cancelled {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+/* ── Shared form styles ── */
+
+.form-field {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 6px;
+  font-weight: 400;
+}
+
+.form-label .required {
+  color: #667eea;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #e0e0e0;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: #555;
+  font-weight: 300;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15),
+              0 0 20px rgba(102, 126, 234, 0.08);
+}
+
+.form-input.error {
+  border-color: #e74c3c;
+}
+
+.form-input.error:focus {
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.15);
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+select.form-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+}
+
+select.form-input option {
+  background: #141414;
+  color: #e0e0e0;
+}
+
+input[type="date"].form-input {
+  color-scheme: dark;
+}
+
+.form-error-message {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #e74c3c;
+}
+
+.date-range {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.date-range .form-input {
+  flex: 1;
+}
+
+.date-separator {
+  color: #555;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* ── Shared buttons ── */
+
+.btn-cancel,
+.btn-save {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-cancel {
+  background: #1a1a1a;
+  color: #ccc;
+  border: 1px solid #2a2a2a;
+}
+
+.btn-cancel:hover {
+  background: #222;
+  color: #fff;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+}
+
+.btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+}
+
+.btn-save:active {
+  transform: translateY(0);
+}
+
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-cancel:focus-visible,
+.btn-save:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* ── Delete confirm (shared) ── */
+
+.delete-trip-link {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.delete-trip-link:hover {
+  background: rgba(231, 76, 60, 0.1);
+  text-decoration: underline;
+}
+
+.delete-confirm {
+  padding: 12px;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 8px;
+}
+
+.delete-confirm-text {
+  font-size: 0.9rem;
+  color: #e74c3c;
+  margin-bottom: 10px;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.delete-confirm-actions button {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.btn-delete-cancel {
+  background: #1a1a1a;
+  color: #ccc;
+}
+
+.btn-delete-confirm {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.btn-delete-cancel:hover,
+.btn-delete-confirm:hover {
+  opacity: 0.85;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -88,11 +312,16 @@
 }
 
 @media (max-width: 480px) {
-  .app {
-    padding: 1.5rem;
-  }
-
   .app-title {
     font-size: 2rem;
+  }
+
+  .date-range {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-separator {
+    display: none;
   }
 }

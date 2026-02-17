@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { countries } from '../data/countries'
+import { countries } from '../data/static/countries'
 import CountryShape from './CountryShape'
 import './CountryAutocomplete.css'
 
@@ -16,8 +16,8 @@ function highlightMatch(text, query) {
   )
 }
 
-export default function CountryAutocomplete({ onSelect, onFirstMatch }) {
-  const [query, setQuery] = useState('')
+export default function CountryAutocomplete({ onSelect, onFirstMatch, initialValue = '' }) {
+  const [query, setQuery] = useState(initialValue)
   const [isOpen, setIsOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
   const inputRef = useRef(null)

@@ -1,38 +1,28 @@
-import { useState } from 'react'
-import CountryAutocomplete from './components/CountryAutocomplete'
-import CountryShape from './components/CountryShape'
+import { useState, useCallback } from 'react'
+import { Routes, Route } from 'react-router-dom'
+import TripsTrigger from './components/TripsTrigger'
+import TripsPanel from './components/TripsPanel/TripsPanel'
+import Home from './pages/Home'
+import TripDetail from './pages/TripDetail'
 import './App.css'
 
 function App() {
-  const [selectedCountry, setSelectedCountry] = useState(null)
-  const [firstMatch, setFirstMatch] = useState(null)
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
 
-  const bgCountry = firstMatch || selectedCountry
+  const togglePanel = useCallback(() => setIsPanelOpen(prev => !prev), [])
+  const closePanel = useCallback(() => setIsPanelOpen(false), [])
 
   return (
-    <div className="app">
-      {bgCountry && (
-        <div className="background-flag" key={`bg-${bgCountry.code}`}>
-          <CountryShape code={bgCountry.code} colors={bgCountry.colors} size={500} />
-        </div>
-      )}
+    <>
+      <TripsTrigger isOpen={isPanelOpen} onToggle={togglePanel} />
 
-      <header className="app-header">
-        <h1 className="app-title">
-          Plan<span>Trip</span>
-        </h1>
-        <p className="app-subtitle">Your next adventure starts here</p>
-      </header>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/trip/:id" element={<TripDetail />} />
+      </Routes>
 
-      <CountryAutocomplete onSelect={setSelectedCountry} onFirstMatch={setFirstMatch} />
-
-      {selectedCountry && (
-        <div className="selected-country" key={selectedCountry.code}>
-          <CountryShape code={selectedCountry.code} colors={selectedCountry.colors} size={72} />
-          <span className="selected-country-name">{selectedCountry.name}</span>
-        </div>
-      )}
-    </div>
+      <TripsPanel isOpen={isPanelOpen} onClose={closePanel} />
+    </>
   )
 }
 
