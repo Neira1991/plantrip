@@ -1,20 +1,24 @@
 # PlanTrip MVP - Architecture Blueprint
 
-**Version:** 1.0
+**Version:** 2.0
 **Date:** 2026-02-17
-**Team:** Database Architect, Frontend Engineer, UX/UI Designer, Technical Lead
+**Team:** Database Architect, Frontend Engineer, Technical Lead
+
+---
+
+> **Schema v2:** The data model has been redesigned to support ordered stops, transport between cities, and activities. See [`data-schema-v2-final.md`](./data-schema-v2-final.md) for the complete schema. The original v1 schema is preserved in [`data-schema.md`](./data-schema.md) for reference.
 
 ---
 
 ## Executive Summary
 
-PlanTrip is a client-side travel planning MVP built with React + Vite. This blueprint defines the complete technical architecture for Trip CRUD operations stored in the browser, designed to scale to a full backend with Cities, TrainRoutes, and trip segments.
+PlanTrip is a client-side travel planning app built with React + Vite. This blueprint defines the complete technical architecture for Trip management with ordered itineraries (stops, movements, activities) stored in the browser, designed to scale to a full backend.
 
 **Core Principles:**
-- MVP-first: ship Trip CRUD fast with localStorage
+- MVP-first: ship with localStorage, migrate to API later
 - Backend-ready: repository pattern enables zero-refactor migration
-- Scalable schema: relational data model ready for Cities, TrainRoutes, TripSegments
-- Cohesive UX: slide-in panel triggered by a single emoji icon
+- Scalable schema: Trip → TripStop → Movement/Activity (normalized, minimalist)
+- Map-first UX: Mapbox map with interactive itinerary sidebar
 
 ---
 

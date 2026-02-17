@@ -1,5 +1,5 @@
 const STORAGE_VERSION_KEY = 'plantrip_storage_version'
-const STORAGE_VERSION = '1.0'
+const STORAGE_VERSION = '2.0'
 
 function initStorage(key) {
   const version = localStorage.getItem(STORAGE_VERSION_KEY)
@@ -60,5 +60,9 @@ export const localStorageAdapter = {
     const items = await this.getAll(key)
     const filtered = items.filter(item => item.id !== id)
     localStorage.setItem(key, JSON.stringify(filtered))
+  },
+
+  async replaceAll(key, items) {
+    localStorage.setItem(key, JSON.stringify(items))
   },
 }

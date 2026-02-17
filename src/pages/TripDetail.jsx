@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import MapboxMap from '../components/MapboxMap'
 import CityAutocomplete from '../components/CityAutocomplete'
+import ItineraryPanel from '../components/ItineraryPanel'
 import DeleteConfirm from '../components/TripsPanel/DeleteConfirm'
 import { useTrips } from '../hooks/useTrips'
+import { useItinerary } from '../hooks/useItinerary'
 import { countries } from '../data/static/countries'
 import './TripDetail.css'
 
@@ -26,6 +28,21 @@ export default function TripDetail() {
   const trip = !isNew ? trips.find(t => t.id === id) : null
   const country = countries.find(c => c.code === (trip?.countryCode || countryParam)) || null
 
+  const tripId = trip?.id || null
+  const {
+    itinerary,
+    stops,
+    movements,
+    addStop,
+    removeStop,
+    reorderStop,
+    addActivity,
+    updateActivity,
+    removeActivity,
+    addMovement,
+    removeMovement,
+  } = useItinerary(tripId)
+
   const [mode, setMode] = useState(isNew ? 'edit' : 'view')
   const [name, setName] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -36,8 +53,8 @@ export default function TripDetail() {
   const [saving, setSaving] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [showCitySearch, setShowCitySearch] = useState(false)
-  const [showCities, setShowCities] = useState(false)
-  const citiesRef = useRef(null)
+  const [showItinerary, setShowItinerary] = useState(false)
+  const [toast, setToast] = useState(null)
 
   useEffect(() => {
     if (trip) {
@@ -54,18 +71,6 @@ export default function TripDetail() {
       setNotes('')
     }
   }, [trip, isNew, country])
-
-  // Close cities dropdown on outside click
-  useEffect(() => {
-    if (!showCities) return
-    function handleClick(e) {
-      if (citiesRef.current && !citiesRef.current.contains(e.target)) {
-        setShowCities(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [showCities])
 
   if (!isNew && !trip && trips.length > 0) {
     return (
@@ -88,8 +93,6 @@ export default function TripDetail() {
       </div>
     )
   }
-
-  const cities = trip?.cities || []
 
   const dateRange = (trip?.startDate || trip?.endDate)
     ? [formatDate(trip?.startDate), formatDate(trip?.endDate)].filter(Boolean).join(' – ')
@@ -115,7 +118,6 @@ export default function TripDetail() {
         endDate: endDate || null,
         status,
         notes: notes.trim(),
-        cities: trip?.cities || [],
       }
       if (isNew) {
         const created = await createTrip(data)
@@ -151,12 +153,24 @@ export default function TripDetail() {
     navigate('/')
   }
 
-  async function handleAddCity(city) {
-    await updateTrip(trip.id, { cities: [...cities, city] })
+  async function handleAddStop(city) {
+    await addStop(tripId, {
+      name: city.name,
+      lng: city.lng,
+      lat: city.lat,
+    })
   }
 
-  async function handleRemoveCity(cityId) {
-    await updateTrip(trip.id, { cities: cities.filter(c => c.id !== cityId) })
+  async function handleReorderStop(tid, fromIndex, toIndex) {
+    const result = await reorderStop(tid, fromIndex, toIndex)
+    if (result?.movementsCleared) {
+      showToast('Transport segments cleared — re-add them for the new order')
+    }
+  }
+
+  function showToast(message) {
+    setToast(message)
+    setTimeout(() => setToast(null), 3000)
   }
 
   return (
@@ -177,43 +191,13 @@ export default function TripDetail() {
 
         <div className="trip-header-actions">
           {!isNew && (
-            <div className="cities-trigger" ref={citiesRef}>
-              <button
-                className="btn-header-icon"
-                onClick={() => setShowCities(prev => !prev)}
-                title="Cities"
-              >
-                📍{cities.length > 0 && <span className="cities-badge">{cities.length}</span>}
-              </button>
-
-              {showCities && (
-                <div className="cities-dropdown">
-                  {cities.length > 0 ? (
-                    <ul className="cities-list">
-                      {cities.map(city => (
-                        <li key={city.id} className="cities-list-item">
-                          <span>{city.name}</span>
-                          <button
-                            className="cities-remove-btn"
-                            onClick={() => handleRemoveCity(city.id)}
-                          >
-                            ✕
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="cities-empty">No cities yet</div>
-                  )}
-                  <button
-                    className="cities-add-btn"
-                    onClick={() => { setShowCities(false); setShowCitySearch(true) }}
-                  >
-                    + Add city
-                  </button>
-                </div>
-              )}
-            </div>
+            <button
+              className="btn-header-icon"
+              onClick={() => setShowItinerary(true)}
+              title="Itinerary"
+            >
+              📍{stops.length > 0 && <span className="cities-badge">{stops.length}</span>}
+            </button>
           )}
 
           {mode === 'view' && !isNew && (
@@ -226,8 +210,30 @@ export default function TripDetail() {
 
       {/* ── Map (fills remaining space) ── */}
       <div className="trip-detail-map">
-        <MapboxMap countryName={country.name} cities={cities} />
+        <MapboxMap
+          countryName={country.name}
+          stops={stops}
+          movements={movements}
+        />
       </div>
+
+      {/* ── Itinerary panel ── */}
+      {showItinerary && (
+        <ItineraryPanel
+          itinerary={itinerary}
+          tripId={tripId}
+          onClose={() => setShowItinerary(false)}
+          onReorderStop={handleReorderStop}
+          onRemoveStop={removeStop}
+          onAddActivity={addActivity}
+          onUpdateActivity={updateActivity}
+          onRemoveActivity={removeActivity}
+          onSaveMovement={addMovement}
+          onDeleteMovement={removeMovement}
+          onOpenCitySearch={() => { setShowItinerary(false); setShowCitySearch(true) }}
+          toast={toast}
+        />
+      )}
 
       {/* ── Edit overlay ── */}
       {mode === 'edit' && (
@@ -321,7 +327,7 @@ export default function TripDetail() {
       {showCitySearch && (
         <CityAutocomplete
           countryCode={country.code}
-          onSelect={handleAddCity}
+          onSelect={handleAddStop}
           onClose={() => setShowCitySearch(false)}
         />
       )}

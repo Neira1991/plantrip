@@ -1,5 +1,8 @@
 import { localStorageAdapter } from '../adapters/localStorageAdapter'
 import { validateTrip } from '../schemas/tripSchema'
+import { tripStopRepository } from './tripStopRepository'
+import { movementRepository } from './movementRepository'
+import { activityRepository } from './activityRepository'
 import { countries } from '../static/countries'
 
 const STORAGE_KEY = 'plantrip_trips'
@@ -33,7 +36,6 @@ export const tripRepository = {
       endDate: data.endDate || null,
       status: data.status || 'planning',
       notes: data.notes || '',
-      cities: data.cities || [],
     }
 
     const validation = validateTrip(tripData)
@@ -49,6 +51,13 @@ export const tripRepository = {
   },
 
   async delete(id) {
+    // Cascade: delete all stops (which cascades to activities + movements)
+    const stops = await tripStopRepository.getByTripId(id)
+    for (const stop of stops) {
+      await activityRepository.deleteByStopId(stop.id)
+    }
+    await movementRepository.deleteByTripId(id)
+    await tripStopRepository.deleteByTripId(id)
     return localStorageAdapter.delete(STORAGE_KEY, id)
   },
 }
