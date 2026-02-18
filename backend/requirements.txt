@@ -6,3 +6,4 @@ pydantic-settings
 bcrypt
 PyJWT
 slowapi
+httpx

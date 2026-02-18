@@ -14,11 +14,17 @@ const MOVEMENT_STYLES = {
   other: { color: '#666', dasharray: [2, 2] },
 }
 
-export default function MapboxMap({ countryName, stops = [], movements = [], activities = [] }) {
+function primaryKind(kinds) {
+  if (!kinds) return ''
+  return kinds.split(',')[0].replace(/_/g, ' ')
+}
+
+export default function MapboxMap({ countryName, stops = [], movements = [], activities = [], poiMarkers = [], onPoiClick }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markersRef = useRef([])
   const activityMarkersRef = useRef([])
+  const poiMarkersRef = useRef([])
   const stopsRef = useRef(stops)
   stopsRef.current = stops
 
@@ -220,6 +226,57 @@ export default function MapboxMap({ countryName, stops = [], movements = [], act
       else m.once('load', fit)
     }
   }, [activities, stops])
+
+  // Sync POI markers
+  useEffect(() => {
+    const m = mapRef.current
+    if (!m) return
+
+    // Clear old POI markers
+    poiMarkersRef.current.forEach(mk => mk.remove())
+    poiMarkersRef.current = []
+
+    poiMarkers.forEach(poi => {
+      if (!poi.point?.lon || !poi.point?.lat) return
+
+      const size = 10 + (poi.rate || 0) * 4 // 10px base, up to 22px for rate=3
+
+      const el = document.createElement('div')
+      el.className = 'poi-marker'
+      el.style.width = `${size}px`
+      el.style.height = `${size}px`
+
+      const kind = primaryKind(poi.kinds)
+      const popupHtml = `
+        <div class="poi-popup">
+          <div class="poi-popup-name">${poi.name}</div>
+          ${kind ? `<div class="poi-popup-kind">${kind}</div>` : ''}
+          ${poi.rate ? `<div class="poi-popup-rate">${'*'.repeat(poi.rate)}</div>` : ''}
+          <button class="poi-popup-add" data-xid="${poi.xid}">+ Add to itinerary</button>
+        </div>
+      `
+
+      const popup = new mapboxgl.Popup({ offset: size / 2 + 4, closeButton: true })
+        .setHTML(popupHtml)
+
+      popup.on('open', () => {
+        const btn = popup.getElement()?.querySelector('.poi-popup-add')
+        if (btn) {
+          btn.addEventListener('click', () => {
+            if (onPoiClick) onPoiClick(poi)
+            popup.remove()
+          })
+        }
+      })
+
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat([poi.point.lon, poi.point.lat])
+        .setPopup(popup)
+        .addTo(m)
+
+      poiMarkersRef.current.push(marker)
+    })
+  }, [poiMarkers, onPoiClick])
 
   if (!MAPBOX_TOKEN) {
     return (

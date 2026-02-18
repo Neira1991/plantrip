@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.auth import get_current_user
 from app.database import get_db
@@ -136,14 +137,18 @@ async def get_itinerary(
     movements = movements_result.scalars().all()
     movement_by_from = {m.from_stop_id: m for m in movements}
 
-    # Load all activities for stops in this trip
+    # Load all activities for stops in this trip (with photos)
     stop_ids = [s.id for s in stops]
-    activities_result = await db.execute(
-        select(Activity)
-        .where(Activity.trip_stop_id.in_(stop_ids))
-        .order_by(Activity.sort_index)
-    ) if stop_ids else None
-    all_activities = activities_result.scalars().all() if activities_result else []
+    if stop_ids:
+        activities_result = await db.execute(
+            select(Activity)
+            .options(selectinload(Activity.photos))
+            .where(Activity.trip_stop_id.in_(stop_ids))
+            .order_by(Activity.sort_index)
+        )
+        all_activities = activities_result.scalars().all()
+    else:
+        all_activities = []
 
     activities_by_stop: dict[UUID, list] = {}
     for a in all_activities:

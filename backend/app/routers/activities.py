@@ -1,14 +1,23 @@
 from datetime import datetime
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select, text
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.auth import get_current_user
+from app.config import settings
 from app.database import get_db
-from app.models import Activity, Trip, TripStop, User
-from app.schemas import ActivityCreate, ActivityResponse, ActivityUpdate
+from app.models import Activity, ActivityPhoto, Trip, TripStop, User
+from app.schemas import (
+    ActivityCreate,
+    ActivityDetailResponse,
+    ActivityPhotoResponse,
+    ActivityResponse,
+    ActivityUpdate,
+)
 
 router = APIRouter(tags=["activities"])
 
@@ -45,6 +54,7 @@ async def list_activities(
     await _verify_stop_ownership(stop_id, user, db)
     result = await db.execute(
         select(Activity)
+        .options(selectinload(Activity.photos))
         .where(Activity.trip_stop_id == stop_id)
         .order_by(Activity.sort_index)
     )
@@ -79,11 +89,26 @@ async def create_activity(
         lat=data.lat,
         address=data.address,
         notes=data.notes,
+        category=data.category,
+        opening_hours=data.opening_hours,
+        price_info=data.price_info,
+        tips=data.tips,
+        website_url=data.website_url,
+        phone=data.phone,
+        rating=data.rating,
+        guide_info=data.guide_info,
+        transport_info=data.transport_info,
+        opentripmap_xid=data.opentripmap_xid,
     )
     db.add(activity)
     await db.commit()
-    await db.refresh(activity)
-    return activity
+    # Re-load with photos to avoid lazy-loading in async context
+    result = await db.execute(
+        select(Activity)
+        .options(selectinload(Activity.photos))
+        .where(Activity.id == activity.id)
+    )
+    return result.scalars().first()
 
 
 @router.put("/activities/{activity_id}", response_model=ActivityResponse)
@@ -101,8 +126,13 @@ async def update_activity(
     activity.updated_at = datetime.utcnow()
 
     await db.commit()
-    await db.refresh(activity)
-    return activity
+    # Re-load with photos
+    result = await db.execute(
+        select(Activity)
+        .options(selectinload(Activity.photos))
+        .where(Activity.id == activity_id)
+    )
+    return result.scalars().first()
 
 
 @router.delete("/activities/{activity_id}", status_code=204)
@@ -133,3 +163,86 @@ async def delete_activity(
         a.updated_at = now
 
     await db.commit()
+
+
+@router.get("/activities/{activity_id}", response_model=ActivityDetailResponse)
+async def get_activity(
+    activity_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Activity)
+        .options(selectinload(Activity.photos))
+        .where(Activity.id == activity_id)
+    )
+    activity = result.scalars().first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    stop = await db.get(TripStop, activity.trip_stop_id)
+    if not stop:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    trip = await db.get(Trip, stop.trip_id)
+    if not trip or trip.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    return activity
+
+
+@router.post("/activities/{activity_id}/photos", response_model=list[ActivityPhotoResponse])
+async def refresh_photos(
+    activity_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    activity = await _verify_activity_ownership(activity_id, user, db)
+
+    if not settings.UNSPLASH_ACCESS_KEY:
+        raise HTTPException(status_code=503, detail="Photo service not configured")
+
+    # Build search query: "title stopName"
+    stop = await db.get(TripStop, activity.trip_stop_id)
+    query = activity.title
+    if stop:
+        query = f"{activity.title} {stop.name}"
+
+    # Fetch from Unsplash
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get(
+            "https://api.unsplash.com/search/photos",
+            params={"query": query, "per_page": 6, "orientation": "landscape"},
+            headers={"Authorization": f"Client-ID {settings.UNSPLASH_ACCESS_KEY}"},
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=502, detail="Failed to fetch photos")
+        data = resp.json()
+
+    # Delete old photos for this activity
+    await db.execute(
+        delete(ActivityPhoto).where(ActivityPhoto.activity_id == activity_id)
+    )
+
+    # Insert new photos
+    photos = []
+    for i, result in enumerate(data.get("results", [])):
+        photo = ActivityPhoto(
+            activity_id=activity_id,
+            url=result["urls"].get("regular", ""),
+            thumbnail_url=result["urls"].get("small", ""),
+            attribution=f"Photo by {result['user']['name']} on Unsplash",
+            photographer_name=result["user"]["name"],
+            photographer_url=result["user"]["links"].get("html", ""),
+            source="unsplash",
+            width=result.get("width"),
+            height=result.get("height"),
+            sort_index=i,
+        )
+        db.add(photo)
+        photos.append(photo)
+
+    await db.commit()
+    for p in photos:
+        await db.refresh(p)
+
+    return photos

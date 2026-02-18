@@ -86,20 +86,67 @@ CREATE INDEX idx_movements_to_stop_id   ON movements (to_stop_id);
 -- ============================================================================
 
 CREATE TABLE activities (
-  id                UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-  trip_stop_id      UUID          NOT NULL REFERENCES trip_stops(id) ON DELETE CASCADE,
-  sort_index        INTEGER       NOT NULL,
-  title             VARCHAR(200)  NOT NULL,
+  id                UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
+  trip_stop_id      UUID              NOT NULL REFERENCES trip_stops(id) ON DELETE CASCADE,
+  sort_index        INTEGER           NOT NULL,
+  title             VARCHAR(200)      NOT NULL,
   date              DATE,
   start_time        TIME,
   duration_minutes  INTEGER,
   lng               DOUBLE PRECISION,
   lat               DOUBLE PRECISION,
-  address           TEXT          DEFAULT '',
-  notes             TEXT          DEFAULT '',
-  created_at        TIMESTAMPTZ   DEFAULT NOW(),
-  updated_at        TIMESTAMPTZ   DEFAULT NOW(),
+  address           TEXT              DEFAULT '',
+  notes             TEXT              DEFAULT '',
+  category          VARCHAR(100)      DEFAULT '',
+  opening_hours     TEXT              DEFAULT '',
+  price_info        TEXT              DEFAULT '',
+  tips              TEXT              DEFAULT '',
+  website_url       VARCHAR(500)      DEFAULT '',
+  phone             VARCHAR(50)       DEFAULT '',
+  rating            DOUBLE PRECISION,
+  guide_info        TEXT              DEFAULT '',
+  transport_info    TEXT              DEFAULT '',
+  opentripmap_xid   VARCHAR(100)      DEFAULT '',
+  created_at        TIMESTAMPTZ       DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ       DEFAULT NOW(),
   CONSTRAINT uq_activity_sort UNIQUE (trip_stop_id, sort_index) DEFERRABLE INITIALLY DEFERRED
 );
 
 CREATE INDEX idx_activities_trip_stop_id ON activities (trip_stop_id);
+
+-- ============================================================================
+-- activity_photos
+-- ============================================================================
+
+CREATE TABLE activity_photos (
+  id                  UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  activity_id         UUID          NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+  url                 VARCHAR(1000) NOT NULL,
+  thumbnail_url       VARCHAR(1000) DEFAULT '',
+  attribution         TEXT          NOT NULL DEFAULT '',
+  photographer_name   VARCHAR(200)  DEFAULT '',
+  photographer_url    VARCHAR(500)  DEFAULT '',
+  source              VARCHAR(50)   DEFAULT 'unsplash',
+  width               INTEGER,
+  height              INTEGER,
+  sort_index          INTEGER       DEFAULT 0,
+  created_at          TIMESTAMPTZ   DEFAULT NOW()
+);
+
+CREATE INDEX idx_activity_photos_activity_id ON activity_photos (activity_id);
+
+-- ============================================================================
+-- share_tokens
+-- ============================================================================
+
+CREATE TABLE share_tokens (
+  id          UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  trip_id     UUID          NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  user_id     UUID          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token       VARCHAR(64)   NOT NULL UNIQUE,
+  expires_at  TIMESTAMPTZ   NOT NULL,
+  created_at  TIMESTAMPTZ   DEFAULT NOW()
+);
+
+CREATE INDEX idx_share_tokens_token   ON share_tokens (token);
+CREATE INDEX idx_share_tokens_trip_id ON share_tokens (trip_id);

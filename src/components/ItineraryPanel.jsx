@@ -17,6 +17,7 @@ export default function ItineraryPanel({
   onUpdateMovement,
   onOpenCitySearch,
   onUpdateNights,
+  onExploreStop,
   toast,
 }) {
   const handleMoveUp = async (sortIndex) => {
@@ -75,6 +76,7 @@ export default function ItineraryPanel({
               <DaySection
                 key={`${day.stopId}-${day.dayNumber}`}
                 day={day}
+                tripId={tripId}
                 countryCode={countryCode}
                 onAddActivity={onAddActivity}
                 onUpdateActivity={onUpdateActivity}
@@ -86,6 +88,7 @@ export default function ItineraryPanel({
                 onAddMovement={handleAddMovement}
                 onUpdateMovement={onUpdateMovement}
                 onRemoveMovement={onDeleteMovement}
+                onExploreStop={onExploreStop}
               />
             ))}
           </div>

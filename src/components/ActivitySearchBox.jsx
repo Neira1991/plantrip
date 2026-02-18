@@ -1,18 +1,76 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { apiAdapter } from '../data/adapters/apiAdapter'
 import './ActivitySearchBox.css'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
+
+function stripHtml(str) {
+  if (!str) return ''
+  return str.replace(/<[^>]*>/g, '')
+}
+
+function primaryKind(kinds) {
+  if (!kinds) return null
+  return kinds.split(',')[0].replace(/_/g, ' ')
+}
 
 export default function ActivitySearchBox({ stopLng, stopLat, countryCode, date, onAdd, testId }) {
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
+  const [searchMode, setSearchMode] = useState('mapbox') // 'mapbox' or 'otm'
+  const [otmAvailable, setOtmAvailable] = useState(true)
+  const [loading, setLoading] = useState(false)
   const sessionToken = useRef(crypto.randomUUID())
   const debounceRef = useRef(null)
   const containerRef = useRef(null)
 
-  const fetchSuggestions = useCallback(async (q) => {
+  // -- OpenTripMap search --
+  const fetchOtmSuggestions = useCallback(async (q) => {
+    if (q.length < 3 || stopLat == null || stopLng == null) {
+      setSuggestions([])
+      setOpen(false)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({
+        name: q,
+        lat: String(stopLat),
+        lon: String(stopLng),
+        radius: '10000',
+        rate: '1',
+        limit: '15',
+      })
+      const data = await apiAdapter.get(`/places/autosuggest?${params}`)
+      const items = (Array.isArray(data) ? data : [])
+        .filter(p => p.name)
+        .map(p => ({
+          source: 'otm',
+          xid: p.xid,
+          name: stripHtml(p.highlightedName || p.name),
+          kinds: p.kinds || '',
+          point: p.point,
+          rate: p.rate || 0,
+        }))
+      setSuggestions(items)
+      setOpen(items.length > 0)
+      setActiveIndex(-1)
+    } catch {
+      // OTM returned an error — mark it unavailable and auto-switch to Mapbox
+      setOtmAvailable(false)
+      setSearchMode('mapbox')
+      setSuggestions([])
+      setOpen(false)
+    } finally {
+      setLoading(false)
+    }
+  }, [stopLng, stopLat])
+
+  // -- Mapbox search (existing behavior) --
+  const fetchMapboxSuggestions = useCallback(async (q) => {
     if (!MAPBOX_TOKEN || q.length < 2) {
       setSuggestions([])
       setOpen(false)
@@ -45,7 +103,6 @@ export default function ActivitySearchBox({ stopLng, stopLat, countryCode, date,
       )
       let data = await res.json()
 
-      // Retry without country filter if no results (e.g. China has limited Mapbox coverage)
       if ((data.suggestions || []).length === 0 && countryCode) {
         res = await fetch(
           `https://api.mapbox.com/search/searchbox/v1/suggest?${buildParams(false)}`
@@ -54,6 +111,7 @@ export default function ActivitySearchBox({ stopLng, stopLat, countryCode, date,
       }
 
       const items = (data.suggestions || []).map(s => ({
+        source: 'mapbox',
         mapbox_id: s.mapbox_id,
         name: s.name,
         address: s.full_address || s.address || '',
@@ -71,15 +129,48 @@ export default function ActivitySearchBox({ stopLng, stopLat, countryCode, date,
     const val = e.target.value
     setQuery(val)
     clearTimeout(debounceRef.current)
-    if (val.trim().length < 2) {
+    const trimmed = val.trim()
+    const minLen = searchMode === 'otm' ? 3 : 2
+    if (trimmed.length < minLen) {
       setSuggestions([])
       setOpen(false)
       return
     }
-    debounceRef.current = setTimeout(() => fetchSuggestions(val.trim()), 300)
+    const fetcher = searchMode === 'otm' ? fetchOtmSuggestions : fetchMapboxSuggestions
+    debounceRef.current = setTimeout(() => fetcher(trimmed), 300)
   }
 
-  const retrieveAndAdd = async (suggestion) => {
+  const retrieveOtmAndAdd = async (suggestion) => {
+    const title = suggestion.name
+    let lng = suggestion.point?.lon ?? null
+    let lat = suggestion.point?.lat ?? null
+    let address = ''
+    let notes = ''
+
+    try {
+      const detail = await apiAdapter.get(`/places/${suggestion.xid}`)
+      if (detail.point) {
+        lng = detail.point.lon ?? lng
+        lat = detail.point.lat ?? lat
+      }
+      if (detail.address) {
+        const parts = [detail.address.road, detail.address.city, detail.address.country].filter(Boolean)
+        address = parts.join(', ')
+      }
+      if (detail.wikipediaExtracts?.text) {
+        notes = detail.wikipediaExtracts.text.slice(0, 300)
+      }
+    } catch {
+      // Use basic data from autosuggest
+    }
+
+    onAdd({ title, date, lng, lat, address, notes })
+    setQuery('')
+    setSuggestions([])
+    setOpen(false)
+  }
+
+  const retrieveMapboxAndAdd = async (suggestion) => {
     const title = suggestion.name
     let lng = null, lat = null, address = suggestion.address || ''
 
@@ -112,6 +203,14 @@ export default function ActivitySearchBox({ stopLng, stopLat, countryCode, date,
     sessionToken.current = crypto.randomUUID()
   }
 
+  const handleSelect = (suggestion) => {
+    if (suggestion.source === 'otm') {
+      retrieveOtmAndAdd(suggestion)
+    } else {
+      retrieveMapboxAndAdd(suggestion)
+    }
+  }
+
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       setOpen(false)
@@ -131,9 +230,8 @@ export default function ActivitySearchBox({ stopLng, stopLat, countryCode, date,
     if (e.key === 'Enter') {
       e.preventDefault()
       if (open && activeIndex >= 0 && suggestions[activeIndex]) {
-        retrieveAndAdd(suggestions[activeIndex])
+        handleSelect(suggestions[activeIndex])
       } else {
-        // Free-text add (no coordinates)
         const title = query.trim()
         if (!title) return
         onAdd({ title, date })
@@ -142,6 +240,14 @@ export default function ActivitySearchBox({ stopLng, stopLat, countryCode, date,
         setOpen(false)
       }
     }
+  }
+
+  const toggleMode = () => {
+    const next = searchMode === 'otm' ? 'mapbox' : 'otm'
+    setSearchMode(next)
+    setSuggestions([])
+    setOpen(false)
+    setActiveIndex(-1)
   }
 
   // Close dropdown on outside click
@@ -163,31 +269,49 @@ export default function ActivitySearchBox({ stopLng, stopLat, countryCode, date,
 
   return (
     <div className="activity-search-container" ref={containerRef}>
-      <input
-        type="text"
-        className="add-activity-input"
-        placeholder="Add activity..."
-        value={query}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        maxLength={200}
-        data-testid={testId}
-      />
+      <div className="activity-search-input-row">
+        <input
+          type="text"
+          className="add-activity-input"
+          placeholder={searchMode === 'otm' ? 'Search places...' : 'Search by address...'}
+          value={query}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          maxLength={200}
+          data-testid={testId}
+        />
+        {otmAvailable && (
+          <button
+            type="button"
+            className="activity-search-mode-toggle"
+            onClick={toggleMode}
+            title={searchMode === 'otm' ? 'Switch to address search' : 'Switch to place search'}
+          >
+            {searchMode === 'otm' ? 'Address' : 'Places'}
+          </button>
+        )}
+      </div>
       {open && suggestions.length > 0 && (
         <div className="activity-search-dropdown" data-testid="activity-search-dropdown">
           {suggestions.map((s, i) => (
             <button
-              key={s.mapbox_id}
+              key={s.xid || s.mapbox_id || i}
               className={`activity-search-option ${i === activeIndex ? 'active' : ''}`}
-              onClick={() => retrieveAndAdd(s)}
+              onClick={() => handleSelect(s)}
               data-testid="activity-search-option"
             >
               <span className="activity-search-name">{s.name}</span>
-              {s.address && <span className="activity-search-address">{s.address}</span>}
+              {s.source === 'otm' && s.kinds && (
+                <span className="activity-search-kind">{primaryKind(s.kinds)}</span>
+              )}
+              {s.source === 'mapbox' && s.address && (
+                <span className="activity-search-address">{s.address}</span>
+              )}
             </button>
           ))}
         </div>
       )}
+      {loading && <div className="activity-search-loading" />}
     </div>
   )
 }

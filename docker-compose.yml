@@ -24,6 +24,8 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      UNSPLASH_ACCESS_KEY: ${UNSPLASH_ACCESS_KEY:-}
+      OPENTRIPMAP_API_KEY: ${OPENTRIPMAP_API_KEY:-}
     ports:
       - "8000:8000"
     volumes:

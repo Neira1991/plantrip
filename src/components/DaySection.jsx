@@ -28,11 +28,11 @@ function formatDuration(mins) {
   return `${h}h${m}m`
 }
 
-export default function DaySection({ day, countryCode, onAddActivity, onUpdateActivity, onRemoveActivity, onReorderActivity, onMoveUp, onMoveDown, onRemoveStop, onUpdateNights, onAddMovement, onUpdateMovement, onRemoveMovement }) {
+export default function DaySection({ day, tripId, countryCode, onAddActivity, onUpdateActivity, onRemoveActivity, onReorderActivity, onMoveUp, onMoveDown, onRemoveStop, onUpdateNights, onAddMovement, onUpdateMovement, onRemoveMovement, onExploreStop }) {
   const [movementForm, setMovementForm] = useState(null)
 
-  const handleAddActivity = ({ title, date, lng, lat, address }) => {
-    onAddActivity(day.stopId, { title, date: date || day.date, lng, lat, address })
+  const handleAddActivity = ({ title, date, lng, lat, address, notes }) => {
+    onAddActivity(day.stopId, { title, date: date || day.date, lng, lat, address, notes })
   }
 
   const isFirstStop = day.stopSortIndex === 0
@@ -45,6 +45,16 @@ export default function DaySection({ day, countryCode, onAddActivity, onUpdateAc
         <span className="day-date">{formatDate(day.date)}</span>
         <span className="day-city">{day.stopName}</span>
       </div>
+
+      {day.isFirstDayOfStop && onExploreStop && (
+        <button
+          className="btn-explore-stop"
+          onClick={() => onExploreStop({ id: day.stopId, name: day.stopName, lat: day.stopLat, lng: day.stopLng })}
+          data-testid="btn-explore-stop"
+        >
+          Explore
+        </button>
+      )}
 
       {day.isFirstDayOfStop && (
         <StopControls
@@ -63,6 +73,7 @@ export default function DaySection({ day, countryCode, onAddActivity, onUpdateAc
           <ActivityItem
             key={activity.id}
             activity={activity}
+            tripId={tripId}
             onUpdate={(updates) => onUpdateActivity(activity.id, updates)}
             onRemove={() => onRemoveActivity(day.stopId, activity.id)}
           />

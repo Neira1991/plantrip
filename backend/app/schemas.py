@@ -1,4 +1,5 @@
 from datetime import date as DateType, datetime, time as TimeType
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, field_validator
@@ -161,6 +162,16 @@ class ActivityCreate(BaseModel):
     lat: float | None = None
     address: str = ""
     notes: str = ""
+    category: str = ""
+    opening_hours: str = ""
+    price_info: str = ""
+    tips: str = ""
+    website_url: str = ""
+    phone: str = ""
+    rating: float | None = None
+    guide_info: str = ""
+    transport_info: str = ""
+    opentripmap_xid: str = ""
 
 
 class ActivityUpdate(BaseModel):
@@ -172,6 +183,31 @@ class ActivityUpdate(BaseModel):
     lat: float | None = None
     address: str | None = None
     notes: str | None = None
+    category: str | None = None
+    opening_hours: str | None = None
+    price_info: str | None = None
+    tips: str | None = None
+    website_url: str | None = None
+    phone: str | None = None
+    rating: float | None = None
+    guide_info: str | None = None
+    transport_info: str | None = None
+    opentripmap_xid: str | None = None
+
+
+class ActivityPhotoResponse(BaseModel):
+    id: UUID
+    url: str
+    thumbnail_url: str
+    attribution: str
+    photographer_name: str
+    photographer_url: str
+    source: str
+    width: int | None
+    height: int | None
+    sort_index: int
+
+    model_config = {"from_attributes": True}
 
 
 class ActivityResponse(BaseModel):
@@ -186,10 +222,25 @@ class ActivityResponse(BaseModel):
     lat: float | None
     address: str
     notes: str
+    category: str = ""
+    opening_hours: str = ""
+    price_info: str = ""
+    tips: str = ""
+    website_url: str = ""
+    phone: str = ""
+    rating: float | None = None
+    guide_info: str = ""
+    transport_info: str = ""
+    opentripmap_xid: str = ""
+    photos: list[ActivityPhotoResponse] = []
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ActivityDetailResponse is the same as ActivityResponse (photos included)
+ActivityDetailResponse = ActivityResponse
 
 
 # --- Itinerary ---
@@ -207,3 +258,63 @@ class ItineraryResponse(BaseModel):
     stops: list[ItineraryStopResponse]
 
     model_config = {"from_attributes": True}
+
+
+# --- Share ---
+
+class ShareTokenResponse(BaseModel):
+    token: str
+    expires_at: datetime
+    trip_id: UUID
+
+    model_config = {"from_attributes": True}
+
+
+class SharedTripResponse(BaseModel):
+    trip_name: str
+    country_code: str
+    start_date: DateType | None
+    end_date: DateType | None
+    status: str
+    stops: list[ItineraryStopResponse]
+    expires_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Places (OpenTripMap) ---
+
+class PlacePoint(BaseModel):
+    lat: float
+    lon: float
+
+
+class PlaceResponse(BaseModel):
+    xid: str
+    name: str
+    kinds: str = ""
+    point: PlacePoint
+    rate: int = 0
+    dist: float | None = None
+
+
+class PlaceDetailResponse(BaseModel):
+    xid: str
+    name: str
+    kinds: str = ""
+    point: PlacePoint
+    rate: int = 0
+    wikipedia: str | None = None
+    image: str | None = None
+    preview: dict[str, Any] | None = None
+    url: str | None = None
+    address: dict[str, Any] | None = None
+    wikipedia_extracts: dict[str, Any] | None = None
+
+
+class GeonameResponse(BaseModel):
+    name: str
+    lat: float
+    lon: float
+    population: int = 0
+    country: str = ""

@@ -57,6 +57,27 @@
   flex-shrink: 0;
 }
 
+.activity-detail-btn {
+  background: none;
+  border: none;
+  color: #444;
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.activity-item:hover .activity-detail-btn {
+  opacity: 1;
+}
+
+.activity-detail-btn:hover {
+  color: #667eea;
+}
+
 .activity-delete-btn {
   background: none;
   border: none;
@@ -173,6 +194,12 @@
 
   .activity-title {
     font-size: 0.85rem;
+  }
+
+  .activity-detail-btn {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+    opacity: 1;
   }
 
   .activity-delete-btn {

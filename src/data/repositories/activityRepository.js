@@ -1,6 +1,14 @@
 import { apiAdapter } from '../adapters/apiAdapter'
 
 export const activityRepository = {
+  async getById(activityId) {
+    return apiAdapter.get(`/activities/${activityId}`)
+  },
+
+  async refreshPhotos(activityId) {
+    return apiAdapter.post(`/activities/${activityId}/photos`)
+  },
+
   async getByStopId(stopId) {
     return apiAdapter.get(`/stops/${stopId}/activities`)
   },

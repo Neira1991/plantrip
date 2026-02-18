@@ -110,7 +110,51 @@ class Activity(Base):
     lat: Mapped[float | None] = mapped_column(Float, nullable=True)
     address: Mapped[str] = mapped_column(Text, default="")
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    category: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    opening_hours: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    price_info: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    tips: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    website_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    phone: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    rating: Mapped[float | None] = mapped_column(Float, nullable=True)
+    guide_info: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    transport_info: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    opentripmap_xid: Mapped[str] = mapped_column(String(100), nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     stop: Mapped["TripStop"] = relationship(back_populates="activities")
+    photos: Mapped[list["ActivityPhoto"]] = relationship(back_populates="activity", cascade="all, delete-orphan")
+
+
+class ActivityPhoto(Base):
+    __tablename__ = "activity_photos"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    activity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("activities.id", ondelete="CASCADE"), nullable=False)
+    url: Mapped[str] = mapped_column(String(1000), nullable=False)
+    thumbnail_url: Mapped[str] = mapped_column(String(1000), nullable=False, default="")
+    attribution: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    photographer_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    photographer_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    source: Mapped[str] = mapped_column(String(50), nullable=False, default="unsplash")
+    width: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    height: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sort_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+    activity: Mapped["Activity"] = relationship(back_populates="photos")
+
+
+class ShareToken(Base):
+    __tablename__ = "share_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    trip_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trips.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+    trip: Mapped["Trip"] = relationship("Trip")
+    user: Mapped["User"] = relationship("User")

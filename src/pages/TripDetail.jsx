@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import MapboxMap from '../components/MapboxMap'
 import CityAutocomplete from '../components/CityAutocomplete'
 import ItineraryPanel from '../components/ItineraryPanel'
+import PlaceFilter from '../components/PlaceFilter'
 import DeleteConfirm from '../components/TripsPanel/DeleteConfirm'
 import { useTrips } from '../hooks/useTrips'
 import { useItinerary } from '../hooks/useItinerary'
+import { apiAdapter } from '../data/adapters/apiAdapter'
 import { countries } from '../data/static/countries'
 import './TripDetail.css'
 
@@ -66,6 +68,12 @@ export default function TripDetail() {
   const [showCitySearch, setShowCitySearch] = useState(false)
   const [showItinerary, setShowItinerary] = useState(false)
   const [toast, setToast] = useState(null)
+  const [sharePopup, setSharePopup] = useState(null)
+  const [shareLoading, setShareLoading] = useState(false)
+  const [exploreStop, setExploreStop] = useState(null) // { id, name, lat, lng }
+  const [exploreResults, setExploreResults] = useState([])
+  const [exploreKinds, setExploreKinds] = useState([])
+  const [exploreLoading, setExploreLoading] = useState(false)
 
   useEffect(() => {
     if (trip) {
@@ -194,6 +202,116 @@ export default function TripDetail() {
     setTimeout(() => setToast(null), 3000)
   }
 
+  const fetchExplorePlaces = useCallback(async (stop, kinds) => {
+    setExploreLoading(true)
+    try {
+      const params = new URLSearchParams({
+        lat: String(stop.lat),
+        lon: String(stop.lng),
+        radius: '10000',
+        rate: '1',
+        limit: '50',
+      })
+      if (kinds.length > 0) {
+        params.set('kinds', kinds.join(','))
+      }
+      const data = await apiAdapter.get(`/places/radius?${params}`)
+      setExploreResults(Array.isArray(data) ? data.filter(p => p.name) : [])
+    } catch {
+      setExploreResults([])
+    } finally {
+      setExploreLoading(false)
+    }
+  }, [])
+
+  async function handleExploreStop(stop) {
+    const stopData = { id: stop.id, name: stop.name, lat: stop.lat, lng: stop.lng }
+    setExploreStop(stopData)
+    setExploreKinds([])
+    await fetchExplorePlaces(stopData, [])
+  }
+
+  function handleExploreKindsChange(newKinds) {
+    setExploreKinds(newKinds)
+    if (exploreStop) {
+      fetchExplorePlaces(exploreStop, newKinds)
+    }
+  }
+
+  function handleCloseExplore() {
+    setExploreStop(null)
+    setExploreResults([])
+    setExploreKinds([])
+  }
+
+  async function handlePoiClick(poi) {
+    if (!exploreStop) return
+    let title = poi.name
+    let lng = poi.point?.lon ?? null
+    let lat = poi.point?.lat ?? null
+    let address = ''
+    let activityNotes = ''
+
+    try {
+      const detail = await apiAdapter.get(`/places/${poi.xid}`)
+      if (detail.point) {
+        lng = detail.point.lon ?? lng
+        lat = detail.point.lat ?? lat
+      }
+      if (detail.address) {
+        const parts = [detail.address.road, detail.address.city, detail.address.country].filter(Boolean)
+        address = parts.join(', ')
+      }
+      if (detail.wikipediaExtracts?.text) {
+        activityNotes = detail.wikipediaExtracts.text.slice(0, 300)
+      }
+    } catch {
+      // Use basic POI data
+    }
+
+    await addActivity(exploreStop.id, { title, lng, lat, address, notes: activityNotes })
+    showToast(`Added "${title}" to ${exploreStop.name}`)
+  }
+
+  async function handleShare() {
+    if (shareLoading) return
+    setShareLoading(true)
+    try {
+      const result = await apiAdapter.post(`/trips/${tripId}/share`)
+      const shareUrl = `${window.location.origin}/shared/${result.token}`
+      try {
+        await navigator.clipboard.writeText(shareUrl)
+        setSharePopup({ url: shareUrl, copied: true })
+      } catch {
+        setSharePopup({ url: shareUrl, copied: false })
+      }
+    } catch (err) {
+      showToast('Failed to create share link')
+    } finally {
+      setShareLoading(false)
+    }
+  }
+
+  async function handleRevokeShare() {
+    try {
+      await apiAdapter.del(`/trips/${tripId}/share`)
+      setSharePopup(null)
+      showToast('Share link revoked')
+    } catch {
+      showToast('Failed to revoke share link')
+    }
+  }
+
+  async function handleCopyShareUrl() {
+    if (!sharePopup?.url) return
+    try {
+      await navigator.clipboard.writeText(sharePopup.url)
+      setSharePopup(prev => ({ ...prev, copied: true }))
+    } catch {
+      // Clipboard not available
+    }
+  }
+
   return (
     <div className="trip-detail">
       {/* ── Header ── */}
@@ -223,6 +341,18 @@ export default function TripDetail() {
           )}
 
           {mode === 'view' && !isNew && (
+            <button
+              className="btn-header-icon"
+              onClick={handleShare}
+              title="Share trip"
+              data-testid="btn-share-trip"
+              disabled={shareLoading}
+            >
+              {shareLoading ? '...' : '\u{1F517}'}
+            </button>
+          )}
+
+          {mode === 'view' && !isNew && (
             <button className="btn-header-icon" onClick={() => setMode('edit')} title="Edit trip" data-testid="btn-edit-trip">
               ✏️
             </button>
@@ -238,6 +368,8 @@ export default function TripDetail() {
             stops={stops}
             movements={movements}
             activities={activities.filter(a => a.lng != null && a.lat != null)}
+            poiMarkers={exploreStop ? exploreResults : []}
+            onPoiClick={handlePoiClick}
           />
         </div>
 
@@ -257,8 +389,46 @@ export default function TripDetail() {
             onDeleteMovement={removeMovement}
             onUpdateNights={handleUpdateStopNights}
             onOpenCitySearch={() => { setShowItinerary(false); setShowCitySearch(true) }}
+            onExploreStop={handleExploreStop}
             toast={toast}
           />
+        )}
+
+        {exploreStop && (
+          <div className="explore-panel" data-testid="explore-panel">
+            <div className="explore-panel-header">
+              <h3 className="explore-panel-title">
+                Explore {exploreStop.name}
+                {exploreLoading && <span className="explore-loading">...</span>}
+              </h3>
+              <button className="itinerary-close-btn" onClick={handleCloseExplore}>&#10005;</button>
+            </div>
+            <PlaceFilter selected={exploreKinds} onChange={handleExploreKindsChange} />
+            <div className="explore-panel-body">
+              {exploreResults.length === 0 && !exploreLoading && (
+                <p className="explore-empty">No places found nearby</p>
+              )}
+              {exploreResults.length > 0 && (
+                <p className="explore-count">{exploreResults.length} places found</p>
+              )}
+              <div className="explore-list">
+                {exploreResults.map(poi => (
+                  <button
+                    key={poi.xid}
+                    className="explore-item"
+                    onClick={() => handlePoiClick(poi)}
+                  >
+                    <span className="explore-item-name">{poi.name}</span>
+                    {poi.kinds && (
+                      <span className="explore-item-kind">
+                        {poi.kinds.split(',')[0].replace(/_/g, ' ')}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -364,6 +534,32 @@ export default function TripDetail() {
           onSelect={handleAddStop}
           onClose={() => setShowCitySearch(false)}
         />
+      )}
+
+      {/* ── Share popup ── */}
+      {sharePopup && (
+        <div className="share-popup-overlay" onClick={() => setSharePopup(null)}>
+          <div className="share-popup-card" onClick={e => e.stopPropagation()}>
+            <h3 className="share-popup-title">Share link created</h3>
+            <p className="share-popup-expiry">Expires in 24 hours</p>
+            <div className="share-popup-url-row">
+              <input
+                type="text"
+                className="share-popup-url"
+                value={sharePopup.url}
+                readOnly
+                onClick={e => e.target.select()}
+              />
+              <button className="share-popup-copy-btn" onClick={handleCopyShareUrl}>
+                {sharePopup.copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+            <div className="share-popup-actions">
+              <button className="share-popup-revoke" onClick={handleRevokeShare}>Revoke link</button>
+              <button className="share-popup-close" onClick={() => setSharePopup(null)}>Close</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

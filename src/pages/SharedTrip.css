@@ -1,0 +1,320 @@
+.shared-trip {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* -- Header -- */
+
+.shared-trip-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #0f0f0f;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.shared-header-left {
+  flex-shrink: 0;
+}
+
+.shared-badge {
+  font-size: 0.65rem;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-weight: 500;
+  background: rgba(102, 126, 234, 0.15);
+  color: #7e94ff;
+  white-space: nowrap;
+}
+
+.shared-header-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.shared-trip-name {
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shared-trip-status {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-weight: 500;
+  text-transform: capitalize;
+  flex-shrink: 0;
+}
+
+.shared-trip-dates {
+  font-size: 0.8rem;
+  color: #666;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.shared-header-right {
+  flex-shrink: 0;
+}
+
+.shared-expiry {
+  font-size: 0.7rem;
+  color: #888;
+  white-space: nowrap;
+}
+
+/* -- Content -- */
+
+.shared-trip-content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.shared-trip-map {
+  flex: 1;
+  min-height: 0;
+}
+
+.shared-trip-itinerary {
+  flex: 0 0 50%;
+  min-width: 0;
+  background: #0f0f0f;
+  border-left: 1px solid #222;
+  display: flex;
+  flex-direction: column;
+}
+
+.shared-itinerary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+
+.shared-itinerary-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shared-itinerary-count {
+  font-size: 0.7rem;
+  background: rgba(102, 126, 234, 0.2);
+  color: #7e94ff;
+  padding: 2px 7px;
+  border-radius: 8px;
+}
+
+.shared-itinerary-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.shared-itinerary-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+/* -- Loading -- */
+
+.shared-trip-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 16px;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.shared-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #222;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: sharedSpin 0.8s linear infinite;
+}
+
+@keyframes sharedSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* -- Error -- */
+
+.shared-trip-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 12px;
+  color: #888;
+  text-align: center;
+  padding: 20px;
+}
+
+.shared-error-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #444;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #888;
+}
+
+.shared-trip-error h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #ccc;
+}
+
+.shared-trip-error p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.shared-error-hint {
+  font-size: 0.8rem !important;
+  color: #555 !important;
+}
+
+/* -- Status colors (matching main app) -- */
+
+.status-planning {
+  background: rgba(102, 126, 234, 0.15);
+  color: #7e94ff;
+}
+
+.status-booked {
+  background: rgba(72, 199, 142, 0.15);
+  color: #48c78e;
+}
+
+.status-completed {
+  background: rgba(136, 136, 136, 0.15);
+  color: #888;
+}
+
+.status-cancelled {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+}
+
+/* -- Responsive -- */
+
+@media (max-width: 768px) {
+  .shared-trip-content {
+    flex-direction: column;
+  }
+
+  .shared-trip-content > .shared-trip-itinerary {
+    order: -1;
+    flex: 1;
+    min-height: 0;
+    border-left: none;
+    border-bottom: 1px solid #222;
+  }
+
+  .shared-trip-content > .shared-trip-map {
+    flex: 0 0 35vh;
+    min-height: 200px;
+  }
+
+  .shared-trip-header {
+    padding: 10px 14px;
+  }
+
+  .shared-trip-name {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .shared-trip-header {
+    padding: 8px 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .shared-trip-name {
+    font-size: 0.95rem;
+  }
+
+  .shared-trip-status {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+
+  .shared-trip-dates {
+    display: none;
+  }
+
+  .shared-badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+  }
+
+  .shared-expiry {
+    font-size: 0.65rem;
+  }
+
+  .shared-itinerary-header {
+    padding: 14px 16px;
+  }
+
+  .shared-itinerary-title {
+    font-size: 0.95rem;
+  }
+
+  .shared-itinerary-count {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+
+  .shared-itinerary-body {
+    padding: 14px 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .shared-trip-header {
+    padding: 8px;
+  }
+
+  .shared-trip-name {
+    font-size: 0.9rem;
+  }
+}

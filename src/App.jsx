@@ -8,6 +8,8 @@ import Home from './pages/Home'
 import TripDetail from './pages/TripDetail'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import SharedTrip from './pages/SharedTrip'
+import ActivityDetail from './pages/ActivityDetail'
 import './App.css'
 
 function App() {
@@ -34,6 +36,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/shared/:token" element={<SharedTrip />} />
         <Route
           path="/"
           element={
@@ -47,6 +50,14 @@ function App() {
           element={
             <ProtectedRoute>
               <TripDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trip/:tripId/activity/:activityId"
+          element={
+            <ProtectedRoute>
+              <ActivityDetail />
             </ProtectedRoute>
           }
         />

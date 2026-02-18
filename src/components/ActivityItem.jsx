@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './ActivityItem.css'
 
 function formatTime(timeStr) {
@@ -18,7 +19,8 @@ function formatDuration(minutes) {
   return m ? `${h}h${m}m` : `${h}h`
 }
 
-export default function ActivityItem({ activity, onUpdate, onRemove, onDelete }) {
+export default function ActivityItem({ activity, onUpdate, onRemove, onDelete, tripId }) {
+  const navigate = useNavigate()
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(activity.title)
   const [startTime, setStartTime] = useState(activity.startTime || '')
@@ -98,6 +100,14 @@ export default function ActivityItem({ activity, onUpdate, onRemove, onDelete })
           <span className="activity-duration-badge" data-testid="activity-duration-badge">{formatDuration(activity.durationMinutes)}</span>
         )}
       </div>
+      {tripId && (
+        <button
+          className="activity-detail-btn"
+          onClick={e => { e.stopPropagation(); navigate(`/trip/${tripId}/activity/${activity.id}`) }}
+          title="View details"
+          data-testid="btn-activity-detail"
+        >&rarr;</button>
+      )}
       <button
         className="activity-delete-btn"
         onClick={e => { e.stopPropagation(); handleRemove(activity.id) }}
