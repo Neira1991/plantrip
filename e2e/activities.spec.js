@@ -3,8 +3,9 @@ import { test, expect } from './fixtures.js'
 test.describe('Activity management', () => {
   let trip, stop
 
-  test.beforeEach(async ({ api }) => {
+  test.beforeEach(async ({ api, page }) => {
     await api.reset()
+    await api.setupAuth(page)
     trip = await api.createTrip({ name: 'France Trip', countryCode: 'FR' })
     stop = await api.createStop(trip.id, { name: 'Paris', lng: 2.35, lat: 48.86 })
   })

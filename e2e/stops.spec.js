@@ -3,8 +3,9 @@ import { test, expect } from './fixtures.js'
 test.describe('Stop management', () => {
   let trip
 
-  test.beforeEach(async ({ api }) => {
+  test.beforeEach(async ({ api, page }) => {
     await api.reset()
+    await api.setupAuth(page)
     trip = await api.createTrip({ name: 'France Trip', countryCode: 'FR' })
   })
 

@@ -1,7 +1,15 @@
-.trips-trigger {
+.trips-trigger-group {
   position: fixed;
   top: 24px;
+  top: max(24px, env(safe-area-inset-top, 24px) + 8px);
   right: 32px;
+  right: max(32px, env(safe-area-inset-right, 32px) + 8px);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.trips-trigger {
   font-size: 32px;
   cursor: pointer;
   background: none;
@@ -9,7 +17,6 @@
   padding: 4px;
   border-radius: 8px;
   opacity: 0.75;
-  z-index: 10;
   transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
   line-height: 1;
 }
@@ -33,10 +40,77 @@
   box-shadow: 0 0 12px rgba(102, 126, 234, 0.3);
 }
 
+.logout-trigger {
+  font-size: 20px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 8px;
+  opacity: 0.5;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  line-height: 1;
+  color: #999;
+  align-self: center;
+}
+
+.logout-trigger:hover {
+  opacity: 1;
+  color: #e74c3c;
+  transform: scale(1.1);
+}
+
+.logout-trigger:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 4px;
+}
+
 @media (max-width: 768px) {
-  .trips-trigger {
+  .trips-trigger-group {
     top: 16px;
     right: 20px;
+  }
+
+  .trips-trigger {
     font-size: 28px;
+    padding: 6px; /* Larger touch target */
+  }
+
+  .logout-trigger {
+    padding: 6px 8px; /* Larger touch target */
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .trips-trigger-group {
+    top: 12px;
+    right: 12px;
+    gap: 6px;
+  }
+
+  .trips-trigger {
+    font-size: 26px;
+    padding: 8px; /* Minimum 44px touch target */
+  }
+
+  .logout-trigger {
+    font-size: 17px;
+    padding: 8px 10px; /* Minimum 44px touch target */
+  }
+}
+
+@media (max-width: 360px) {
+  .trips-trigger-group {
+    top: 10px;
+    right: 10px;
+  }
+
+  .trips-trigger {
+    font-size: 24px;
+  }
+
+  .logout-trigger {
+    font-size: 16px;
   }
 }

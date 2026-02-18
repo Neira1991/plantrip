@@ -5,15 +5,38 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import get_current_user
 from app.database import get_db
-from app.models import Movement, Trip
+from app.models import Movement, Trip, User
 from app.schemas import MovementCreate, MovementResponse, MovementUpdate
 
 router = APIRouter(tags=["movements"])
 
 
+async def _verify_trip_ownership(trip_id: UUID, user: User, db: AsyncSession) -> Trip:
+    trip = await db.get(Trip, trip_id)
+    if not trip or trip.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    return trip
+
+
+async def _verify_movement_ownership(movement_id: UUID, user: User, db: AsyncSession) -> Movement:
+    movement = await db.get(Movement, movement_id)
+    if not movement:
+        raise HTTPException(status_code=404, detail="Movement not found")
+    trip = await db.get(Trip, movement.trip_id)
+    if not trip or trip.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Movement not found")
+    return movement
+
+
 @router.get("/trips/{trip_id}/movements", response_model=list[MovementResponse])
-async def list_movements(trip_id: UUID, db: AsyncSession = Depends(get_db)):
+async def list_movements(
+    trip_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _verify_trip_ownership(trip_id, user, db)
     result = await db.execute(
         select(Movement).where(Movement.trip_id == trip_id)
     )
@@ -21,11 +44,13 @@ async def list_movements(trip_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/trips/{trip_id}/movements", response_model=MovementResponse, status_code=201)
-async def upsert_movement(trip_id: UUID, data: MovementCreate, db: AsyncSession = Depends(get_db)):
-    # Verify trip exists
-    trip = await db.get(Trip, trip_id)
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
+async def upsert_movement(
+    trip_id: UUID,
+    data: MovementCreate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _verify_trip_ownership(trip_id, user, db)
 
     # Check for existing movement with same from/to stops
     result = await db.execute(
@@ -70,10 +95,13 @@ async def upsert_movement(trip_id: UUID, data: MovementCreate, db: AsyncSession 
 
 
 @router.put("/movements/{movement_id}", response_model=MovementResponse)
-async def update_movement(movement_id: UUID, data: MovementUpdate, db: AsyncSession = Depends(get_db)):
-    movement = await db.get(Movement, movement_id)
-    if not movement:
-        raise HTTPException(status_code=404, detail="Movement not found")
+async def update_movement(
+    movement_id: UUID,
+    data: MovementUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    movement = await _verify_movement_ownership(movement_id, user, db)
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -86,10 +114,11 @@ async def update_movement(movement_id: UUID, data: MovementUpdate, db: AsyncSess
 
 
 @router.delete("/movements/{movement_id}", status_code=204)
-async def delete_movement(movement_id: UUID, db: AsyncSession = Depends(get_db)):
-    movement = await db.get(Movement, movement_id)
-    if not movement:
-        raise HTTPException(status_code=404, detail="Movement not found")
-
+async def delete_movement(
+    movement_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    movement = await _verify_movement_ownership(movement_id, user, db)
     await db.delete(movement)
     await db.commit()

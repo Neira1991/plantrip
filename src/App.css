@@ -283,6 +283,7 @@ input[type="date"].form-input {
   cursor: pointer;
   border: none;
   transition: opacity 0.2s;
+  min-height: 36px;
 }
 
 .btn-delete-cancel {
@@ -311,17 +312,94 @@ input[type="date"].form-input {
   }
 }
 
+@media (max-width: 768px) {
+  .app-title {
+    font-size: 2.2rem;
+  }
+
+  .app-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .background-flag {
+    opacity: 0.2;
+  }
+}
+
 @media (max-width: 480px) {
   .app-title {
-    font-size: 2rem;
+    font-size: 1.8rem;
+  }
+
+  .app-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .app-header {
+    margin-bottom: 2rem;
   }
 
   .date-range {
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
   }
 
   .date-separator {
     display: none;
+  }
+
+  .form-input,
+  .form-textarea {
+    font-size: 16px; /* Prevents iOS zoom */
+    padding: 14px 16px; /* Minimum 44px touch target */
+  }
+
+  .btn-cancel,
+  .btn-save {
+    padding: 16px; /* Minimum 44px touch target */
+    font-size: 0.95rem;
+  }
+
+  .selected-country {
+    margin-top: 2rem;
+  }
+
+  .selected-country-name {
+    font-size: 1.1rem;
+  }
+
+  .delete-trip-link {
+    padding: 10px; /* Larger touch target */
+    font-size: 0.85rem;
+  }
+
+  .delete-confirm {
+    padding: 14px;
+  }
+
+  .delete-confirm-text {
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+
+  .delete-confirm-actions button {
+    padding: 10px; /* Minimum 44px touch target */
+    font-size: 0.85rem;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 360px) {
+  .app-title {
+    font-size: 1.6rem;
+  }
+
+  .app-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .app-header {
+    margin-bottom: 1.5rem;
   }
 }

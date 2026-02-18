@@ -1,8 +1,18 @@
--- PlanTrip Database Schema v2
--- Generated from docs/architecture/data-schema-v2-final.md
+-- PlanTrip Database Schema v3 (with auth)
 
 -- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- ============================================================================
+-- users
+-- ============================================================================
+
+CREATE TABLE users (
+  id              UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  email           VARCHAR(320)  NOT NULL UNIQUE,
+  hashed_password VARCHAR(128)  NOT NULL,
+  created_at      TIMESTAMPTZ   DEFAULT NOW()
+);
 
 -- ============================================================================
 -- trips
@@ -10,6 +20,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE trips (
   id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       UUID          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name          VARCHAR(200)  NOT NULL,
   country_code  VARCHAR(10)   NOT NULL,
   start_date    DATE,
@@ -20,6 +31,7 @@ CREATE TABLE trips (
   updated_at    TIMESTAMPTZ   DEFAULT NOW()
 );
 
+CREATE INDEX idx_trips_user_id      ON trips (user_id);
 CREATE INDEX idx_trips_country_code ON trips (country_code);
 CREATE INDEX idx_trips_status       ON trips (status);
 

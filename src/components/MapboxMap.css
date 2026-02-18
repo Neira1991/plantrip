@@ -72,3 +72,102 @@
 .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
   border-left-color: #1a1a1a !important;
 }
+
+/* ── Mapbox controls positioning ── */
+
+.mapboxgl-ctrl-bottom-right {
+  bottom: 10px;
+  right: 10px;
+}
+
+.mapboxgl-ctrl-group button {
+  min-width: 29px;
+  min-height: 29px;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .stop-marker {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+    border-width: 2.5px;
+  }
+
+  .mapboxgl-popup-content {
+    font-size: 0.9rem;
+    padding: 10px 14px !important;
+  }
+
+  .mapboxgl-ctrl-bottom-right {
+    bottom: 12px;
+    right: 12px;
+  }
+
+  .mapboxgl-ctrl-group button {
+    min-width: 32px;
+    min-height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stop-marker {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+    border-width: 3px;
+  }
+
+  .mapboxgl-popup-content {
+    font-size: 0.95rem;
+    padding: 12px 16px !important;
+  }
+
+  .mapbox-placeholder {
+    font-size: 0.85rem;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .mapbox-placeholder code {
+    display: block;
+    margin-top: 8px;
+  }
+
+  .mapboxgl-ctrl-bottom-right {
+    bottom: 14px;
+    right: 14px;
+  }
+
+  .mapboxgl-ctrl-group button {
+    min-width: 36px; /* Larger touch target */
+    min-height: 36px;
+    font-size: 16px;
+  }
+
+  .mapboxgl-ctrl-group {
+    border-radius: 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .stop-marker {
+    width: 30px;
+    height: 30px;
+  }
+
+  .mapboxgl-popup-content {
+    font-size: 0.9rem;
+  }
+
+  .mapboxgl-ctrl-bottom-right {
+    bottom: 12px;
+    right: 12px;
+  }
+
+  .mapboxgl-ctrl-group button {
+    min-width: 34px;
+    min-height: 34px;
+  }
+}

@@ -1,0 +1,6 @@
+# Dev/test overrides — automatically merged by `docker compose up`
+# Do NOT deploy this file to production.
+services:
+  backend:
+    environment:
+      TESTING: "true"

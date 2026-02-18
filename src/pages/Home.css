@@ -8,3 +8,36 @@
   position: relative;
   overflow: hidden;
 }
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .home {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home {
+    padding: 1rem;
+    justify-content: flex-start;
+    padding-top: 3rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .home {
+    padding: 0.75rem;
+    padding-top: 2rem;
+  }
+}
+
+/* ── Landscape mobile devices ── */
+
+@media (max-height: 480px) and (orientation: landscape) {
+  .home {
+    padding: 1rem;
+    padding-top: 1.5rem;
+    justify-content: flex-start;
+  }
+}

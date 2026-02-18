@@ -1,27 +1,60 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { useAuthStore } from './stores/authStore'
+import ProtectedRoute from './components/ProtectedRoute'
 import TripsTrigger from './components/TripsTrigger'
 import TripsPanel from './components/TripsPanel/TripsPanel'
 import Home from './pages/Home'
 import TripDetail from './pages/TripDetail'
+import Login from './pages/Login'
+import Register from './pages/Register'
 import './App.css'
 
 function App() {
   const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const { isAuthenticated, isLoading, checkAuth } = useAuthStore()
+
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
 
   const togglePanel = useCallback(() => setIsPanelOpen(prev => !prev), [])
   const closePanel = useCallback(() => setIsPanelOpen(false), [])
 
+  if (isLoading) {
+    return null
+  }
+
   return (
     <>
-      <TripsTrigger isOpen={isPanelOpen} onToggle={togglePanel} />
+      {isAuthenticated && (
+        <TripsTrigger isOpen={isPanelOpen} onToggle={togglePanel} />
+      )}
 
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/trip/:id" element={<TripDetail />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trip/:id"
+          element={
+            <ProtectedRoute>
+              <TripDetail />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
 
-      <TripsPanel isOpen={isPanelOpen} onClose={closePanel} />
+      {isAuthenticated && (
+        <TripsPanel isOpen={isPanelOpen} onClose={closePanel} />
+      )}
     </>
   )
 }

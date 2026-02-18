@@ -1,8 +1,9 @@
 import { test, expect } from './fixtures.js'
 
 test.describe('Trip CRUD', () => {
-  test.beforeEach(async ({ api }) => {
+  test.beforeEach(async ({ api, page }) => {
     await api.reset()
+    await api.setupAuth(page)
   })
 
   test('create a trip from home page', async ({ page }) => {

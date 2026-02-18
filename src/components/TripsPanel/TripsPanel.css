@@ -88,6 +88,8 @@
 .trips-panel-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 /* ── Trip List ── */
@@ -230,6 +232,100 @@
 
 @media (max-width: 768px) {
   .trips-panel {
+    width: 85vw;
+    max-width: 380px;
+  }
+
+  .panel-title {
+    font-size: 1.15rem;
+  }
+
+  .close-btn {
+    padding: 8px 14px; /* Larger touch target */
+  }
+}
+
+@media (max-width: 480px) {
+  .trips-panel {
     width: 100vw;
+    max-width: none;
+  }
+
+  .trips-panel-header {
+    padding: 14px 16px;
+  }
+
+  .panel-title {
+    font-size: 1.1rem;
+  }
+
+  .close-btn {
+    padding: 10px 16px; /* Minimum 44px touch target */
+    font-size: 0.95rem;
+  }
+
+  .trips-list {
+    padding: 16px;
+    gap: 10px;
+  }
+
+  .trip-card {
+    padding: 14px;
+  }
+
+  .trip-card-country {
+    font-size: 1rem;
+  }
+
+  .trip-card-name {
+    font-size: 0.9rem;
+  }
+
+  .trip-card-dates {
+    font-size: 0.8rem;
+  }
+
+  .trip-card-status {
+    font-size: 0.7rem;
+    padding: 2px 7px;
+  }
+
+  .new-trip-btn-primary {
+    padding: 14px 20px; /* Minimum 44px touch target */
+    font-size: 0.95rem;
+  }
+
+  .trips-empty-state {
+    padding: 32px 20px;
+  }
+
+  .empty-icon {
+    font-size: 3.5rem;
+  }
+
+  .trips-empty-state h3 {
+    font-size: 1.15rem;
+  }
+
+  .trips-empty-state p {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .trips-panel-header {
+    padding: 12px 14px;
+  }
+
+  .panel-title {
+    font-size: 1.05rem;
+  }
+
+  .trips-list {
+    padding: 14px;
+  }
+
+  .trip-card {
+    padding: 12px;
   }
 }

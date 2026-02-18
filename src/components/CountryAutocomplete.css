@@ -38,11 +38,14 @@
   border: 1px solid #2a2a2a;
   border-radius: 12px;
   overflow: hidden;
+  overflow-y: auto;
+  max-height: 320px;
   opacity: 0;
   transform: translateY(-8px);
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 100;
+  -webkit-overflow-scrolling: touch;
 }
 
 .autocomplete-dropdown.open {
@@ -85,13 +88,61 @@
   font-weight: 500;
 }
 
+@media (max-width: 768px) {
+  .autocomplete {
+    max-width: 90%;
+  }
+
+  .autocomplete-input {
+    font-size: 1.1rem;
+    padding: 0.95rem 1.4rem;
+  }
+
+  .autocomplete-item {
+    padding: 0.85rem 1rem;
+  }
+}
+
 @media (max-width: 480px) {
   .autocomplete {
     max-width: 100%;
   }
 
   .autocomplete-input {
-    font-size: 1rem;
-    padding: 0.85rem 1.2rem;
+    font-size: 16px; /* Prevents iOS zoom */
+    padding: 1rem 1.2rem; /* Minimum 44px touch target */
+  }
+
+  .autocomplete-dropdown {
+    top: calc(100% + 6px);
+    max-height: 280px;
+  }
+
+  .autocomplete-dropdown ul {
+    padding: 4px;
+  }
+
+  .autocomplete-item {
+    padding: 0.85rem 0.9rem; /* Larger touch target */
+    gap: 10px;
+  }
+
+  .autocomplete-item-name {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .autocomplete-input {
+    font-size: 15px;
+    padding: 0.9rem 1rem;
+  }
+
+  .autocomplete-item {
+    padding: 0.8rem 0.85rem;
+  }
+
+  .autocomplete-item-name {
+    font-size: 0.85rem;
   }
 }

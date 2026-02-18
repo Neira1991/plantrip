@@ -1,8 +1,9 @@
 import { test, expect } from './fixtures.js'
 
 test.describe('Navigation & panels', () => {
-  test.beforeEach(async ({ api }) => {
+  test.beforeEach(async ({ api, page }) => {
     await api.reset()
+    await api.setupAuth(page)
   })
 
   test('trips panel shows trip list and navigates to trip', async ({ page, api }) => {

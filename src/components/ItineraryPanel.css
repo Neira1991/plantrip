@@ -76,7 +76,9 @@
 .itinerary-panel-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px 0;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 /* ── Empty state ── */
@@ -501,8 +503,201 @@
 
 /* ── Responsive ── */
 
+@media (max-width: 768px) {
+  .itinerary-panel {
+    width: 85vw;
+    max-width: 380px;
+  }
+
+  .itinerary-close-btn {
+    padding: 6px 10px; /* Larger touch target */
+  }
+
+  .stop-card-wrapper {
+    padding: 0 14px;
+  }
+
+  .itinerary-add-stop-btn {
+    padding: 12px; /* Larger touch target */
+  }
+}
+
 @media (max-width: 480px) {
   .itinerary-panel {
     width: 100%;
+    max-width: none;
+  }
+
+  .itinerary-panel-header {
+    padding: 14px 16px;
+  }
+
+  .itinerary-panel-title {
+    font-size: 0.95rem;
+  }
+
+  .itinerary-count {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+
+  .itinerary-close-btn {
+    padding: 8px 12px; /* Minimum 44px touch target */
+    font-size: 0.85rem;
+  }
+
+  .itinerary-panel-body {
+    padding: 14px 0;
+  }
+
+  .stop-card-wrapper {
+    padding: 0 12px;
+  }
+
+  .stop-number {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .stop-name {
+    font-size: 0.85rem;
+  }
+
+  .stop-move-btn {
+    padding: 6px 8px; /* Larger touch target */
+    font-size: 0.8rem;
+  }
+
+  .stop-remove-btn {
+    padding: 6px 8px; /* Larger touch target */
+    font-size: 0.75rem;
+  }
+
+  .stop-confirm-yes,
+  .stop-confirm-no {
+    font-size: 0.75rem;
+    padding: 4px 10px; /* Larger touch target */
+  }
+
+  .activity-title {
+    font-size: 0.85rem;
+  }
+
+  .activity-edit-input {
+    font-size: 0.85rem;
+    padding: 5px 10px;
+  }
+
+  .activity-add-input {
+    font-size: 0.85rem;
+    padding: 10px 12px 10px 38px;
+  }
+
+  .activity-delete-btn {
+    padding: 4px 6px; /* Larger touch target */
+    font-size: 0.7rem;
+  }
+
+  .activity-item:hover .activity-delete-btn {
+    opacity: 1; /* Always show on mobile */
+  }
+
+  .movement-add-btn {
+    padding: 6px 16px; /* Larger touch target */
+    font-size: 0.8rem;
+  }
+
+  .movement-summary {
+    padding: 7px 16px; /* Larger touch target */
+    font-size: 0.8rem;
+  }
+
+  .movement-icon {
+    font-size: 0.9rem;
+  }
+
+  .movement-label {
+    font-size: 0.8rem;
+  }
+
+  .movement-edit-form {
+    padding: 12px;
+  }
+
+  .movement-type-btn {
+    font-size: 1rem;
+    padding: 8px 0; /* Larger touch target */
+  }
+
+  .movement-input {
+    font-size: 0.85rem;
+    padding: 8px 12px; /* Larger touch target */
+    margin-bottom: 8px;
+  }
+
+  .movement-cancel-btn,
+  .movement-delete-btn,
+  .movement-save-btn {
+    font-size: 0.8rem;
+    padding: 6px 14px; /* Larger touch target */
+  }
+
+  .itinerary-panel-footer {
+    padding: 14px;
+  }
+
+  .itinerary-add-stop-btn {
+    padding: 14px; /* Minimum 44px touch target */
+    font-size: 0.9rem;
+  }
+
+  .itinerary-toast {
+    bottom: 80px;
+    font-size: 0.85rem;
+    padding: 10px 18px;
+    max-width: calc(100% - 40px);
+    white-space: normal;
+    text-align: center;
+  }
+
+  .itinerary-empty {
+    padding: 32px 16px;
+  }
+
+  .itinerary-empty p {
+    font-size: 0.9rem;
+  }
+
+  .itinerary-empty-hint {
+    font-size: 0.75rem !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .itinerary-panel-header {
+    padding: 12px 14px;
+  }
+
+  .itinerary-panel-title {
+    font-size: 0.9rem;
+  }
+
+  .stop-card-wrapper {
+    padding: 0 10px;
+  }
+
+  .stop-name {
+    font-size: 0.8rem;
+  }
+
+  .activity-title,
+  .activity-edit-input,
+  .activity-add-input {
+    font-size: 0.8rem;
+  }
+
+  .itinerary-panel-footer {
+    padding: 12px;
   }
 }

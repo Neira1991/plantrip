@@ -122,11 +122,13 @@
   max-width: 460px;
   max-height: 85vh;
   overflow-y: auto;
+  overflow-x: hidden;
   background: #0f0f0f;
   border: 1px solid #2a2a2a;
   border-radius: 16px;
   padding: 28px;
   animation: dropdownIn 0.25s ease;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .trip-edit-card .form-field {
@@ -179,22 +181,90 @@
 
 /* ── Responsive ── */
 
+@media (max-width: 768px) {
+  .trip-detail-header {
+    padding: 10px 14px;
+  }
+
+  .trip-header-name {
+    font-size: 1rem;
+  }
+
+  .btn-header-icon {
+    padding: 8px 12px; /* Larger touch target */
+    font-size: 1.1rem;
+  }
+
+  .trip-edit-card {
+    max-width: 90%;
+    padding: 24px;
+  }
+}
+
 @media (max-width: 480px) {
   .trip-detail-header {
-    padding: 8px 12px;
-    gap: 8px;
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .trip-header-name {
+    font-size: 0.95rem;
+  }
+
+  .trip-header-status {
+    font-size: 0.65rem;
+    padding: 2px 6px;
   }
 
   .trip-header-dates {
     display: none;
   }
 
+  .btn-header-icon {
+    padding: 10px 12px; /* Minimum 44px touch target */
+    font-size: 1rem;
+  }
+
+  .cities-badge {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+  }
+
+  .trip-edit-overlay {
+    padding: 16px;
+  }
+
   .trip-edit-card {
-    padding: 20px;
+    padding: 20px 16px;
+    max-height: 90vh;
+  }
+
+  .trip-edit-card .form-field {
+    margin-bottom: 16px;
   }
 
   .trip-edit-actions {
     flex-direction: column;
+    gap: 10px;
+  }
+
+  .trip-edit-actions .btn-cancel,
+  .trip-edit-actions .btn-save {
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .trip-detail-header {
+    padding: 8px;
+  }
+
+  .trip-header-name {
+    font-size: 0.9rem;
+  }
+
+  .trip-edit-card {
+    padding: 18px 14px;
   }
 }
 

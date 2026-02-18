@@ -3,3 +3,6 @@ uvicorn[standard]
 sqlalchemy[asyncio]
 asyncpg
 pydantic-settings
+bcrypt
+PyJWT
+slowapi

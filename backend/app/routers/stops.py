@@ -2,18 +2,41 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import delete, func, select, text, update
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import get_current_user
 from app.database import get_db
-from app.models import Activity, Movement, Trip, TripStop
+from app.models import Activity, Movement, Trip, TripStop, User
 from app.schemas import TripStopCreate, TripStopReorder, TripStopResponse, TripStopUpdate
 
 router = APIRouter(tags=["stops"])
 
 
+async def _verify_trip_ownership(trip_id: UUID, user: User, db: AsyncSession) -> Trip:
+    trip = await db.get(Trip, trip_id)
+    if not trip or trip.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    return trip
+
+
+async def _verify_stop_ownership(stop_id: UUID, user: User, db: AsyncSession) -> TripStop:
+    stop = await db.get(TripStop, stop_id)
+    if not stop:
+        raise HTTPException(status_code=404, detail="Stop not found")
+    trip = await db.get(Trip, stop.trip_id)
+    if not trip or trip.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Stop not found")
+    return stop
+
+
 @router.get("/trips/{trip_id}/stops", response_model=list[TripStopResponse])
-async def list_stops(trip_id: UUID, db: AsyncSession = Depends(get_db)):
+async def list_stops(
+    trip_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _verify_trip_ownership(trip_id, user, db)
     result = await db.execute(
         select(TripStop)
         .where(TripStop.trip_id == trip_id)
@@ -23,11 +46,13 @@ async def list_stops(trip_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/trips/{trip_id}/stops", response_model=TripStopResponse, status_code=201)
-async def create_stop(trip_id: UUID, data: TripStopCreate, db: AsyncSession = Depends(get_db)):
-    # Verify trip exists
-    trip = await db.get(Trip, trip_id)
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
+async def create_stop(
+    trip_id: UUID,
+    data: TripStopCreate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _verify_trip_ownership(trip_id, user, db)
 
     # Auto-assign sort_index
     result = await db.execute(
@@ -52,10 +77,13 @@ async def create_stop(trip_id: UUID, data: TripStopCreate, db: AsyncSession = De
 
 
 @router.put("/stops/{stop_id}", response_model=TripStopResponse)
-async def update_stop(stop_id: UUID, data: TripStopUpdate, db: AsyncSession = Depends(get_db)):
-    stop = await db.get(TripStop, stop_id)
-    if not stop:
-        raise HTTPException(status_code=404, detail="Stop not found")
+async def update_stop(
+    stop_id: UUID,
+    data: TripStopUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    stop = await _verify_stop_ownership(stop_id, user, db)
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -68,11 +96,12 @@ async def update_stop(stop_id: UUID, data: TripStopUpdate, db: AsyncSession = De
 
 
 @router.delete("/stops/{stop_id}", status_code=204)
-async def delete_stop(stop_id: UUID, db: AsyncSession = Depends(get_db)):
-    stop = await db.get(TripStop, stop_id)
-    if not stop:
-        raise HTTPException(status_code=404, detail="Stop not found")
-
+async def delete_stop(
+    stop_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    stop = await _verify_stop_ownership(stop_id, user, db)
     trip_id = stop.trip_id
 
     # Delete activities for this stop
@@ -107,7 +136,14 @@ async def delete_stop(stop_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.put("/trips/{trip_id}/stops/reorder", response_model=list[TripStopResponse])
-async def reorder_stops(trip_id: UUID, data: TripStopReorder, db: AsyncSession = Depends(get_db)):
+async def reorder_stops(
+    trip_id: UUID,
+    data: TripStopReorder,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _verify_trip_ownership(trip_id, user, db)
+
     # Load all stops for this trip sorted by sort_index
     result = await db.execute(
         select(TripStop)

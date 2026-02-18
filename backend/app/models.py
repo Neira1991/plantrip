@@ -9,10 +9,22 @@ class Base(DeclarativeBase):
     pass
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+    trips: Mapped[list["Trip"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+
+
 class Trip(Base):
     __tablename__ = "trips"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     country_code: Mapped[str] = mapped_column(String(10), nullable=False)
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -22,6 +34,7 @@ class Trip(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    owner: Mapped["User"] = relationship(back_populates="trips")
     stops: Mapped[list["TripStop"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
     movements: Mapped[list["Movement"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
 

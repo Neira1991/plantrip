@@ -1,6 +1,7 @@
 import { test as base, expect } from '@playwright/test'
 
 const API_URL = 'http://localhost:3000/api'
+const TEST_SECRET = 'plantrip-test-secret'
 
 /**
  * API helper for direct backend calls during test setup/teardown.
@@ -8,12 +9,21 @@ const API_URL = 'http://localhost:3000/api'
 class ApiHelper {
   constructor() {
     this.baseUrl = API_URL
+    this.accessToken = null
+    this.refreshToken = null
   }
 
   async request(method, path, body) {
     const opts = {
       method,
       headers: { 'Content-Type': 'application/json' },
+    }
+    if (this.accessToken) {
+      opts.headers['Cookie'] = `access_token=${this.accessToken}`
+    }
+    // Test endpoints require the shared secret header
+    if (path.startsWith('/test/')) {
+      opts.headers['X-Test-Secret'] = TEST_SECRET
     }
     if (body) opts.body = JSON.stringify(body)
     const res = await fetch(`${this.baseUrl}${path}`, opts)
@@ -25,9 +35,44 @@ class ApiHelper {
     return res.json()
   }
 
+  // ── Auth ──
+  async createTestUser() {
+    const data = await this.request('POST', '/test/create-test-user')
+    this.accessToken = data.access_token
+    this.refreshToken = data.refresh_token
+    return data
+  }
+
+  async setupAuth(page) {
+    const user = await this.createTestUser()
+    await page.context().addCookies([
+      {
+        name: 'access_token',
+        value: user.access_token,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+      {
+        name: 'refresh_token',
+        value: user.refresh_token,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ])
+    return user
+  }
+
   // ── Reset ──
   async reset() {
+    // Reset doesn't require auth (test endpoint)
+    const savedToken = this.accessToken
+    this.accessToken = null
     await this.request('POST', '/test/reset')
+    this.accessToken = savedToken
   }
 
   // ── Trips ──
