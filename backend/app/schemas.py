@@ -1,7 +1,7 @@
 from datetime import date as DateType, datetime, time as TimeType
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 # --- Auth ---
@@ -29,8 +29,7 @@ class UserResponse(BaseModel):
 class TripCreate(BaseModel):
     name: str
     country_code: str
-    start_date: DateType | None = None
-    end_date: DateType | None = None
+    start_date: DateType
     status: str = "planning"
     notes: str = ""
 
@@ -39,7 +38,6 @@ class TripUpdate(BaseModel):
     name: str | None = None
     country_code: str | None = None
     start_date: DateType | None = None
-    end_date: DateType | None = None
     status: str | None = None
     notes: str | None = None
 
@@ -65,6 +63,14 @@ class TripStopCreate(BaseModel):
     lng: float
     lat: float
     notes: str = ""
+    nights: int = 1
+
+    @field_validator("nights")
+    @classmethod
+    def nights_min(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("nights must be at least 1")
+        return v
 
 
 class TripStopUpdate(BaseModel):
@@ -72,6 +78,14 @@ class TripStopUpdate(BaseModel):
     lng: float | None = None
     lat: float | None = None
     notes: str | None = None
+    nights: int | None = None
+
+    @field_validator("nights")
+    @classmethod
+    def nights_min(cls, v: int | None) -> int | None:
+        if v is not None and v < 1:
+            raise ValueError("nights must be at least 1")
+        return v
 
 
 class TripStopResponse(BaseModel):
@@ -82,6 +96,7 @@ class TripStopResponse(BaseModel):
     lng: float
     lat: float
     notes: str
+    nights: int
     created_at: datetime
     updated_at: datetime
 
@@ -142,6 +157,9 @@ class ActivityCreate(BaseModel):
     date: DateType | None = None
     start_time: TimeType | None = None
     duration_minutes: int | None = None
+    lng: float | None = None
+    lat: float | None = None
+    address: str = ""
     notes: str = ""
 
 
@@ -150,6 +168,9 @@ class ActivityUpdate(BaseModel):
     date: DateType | None = None
     start_time: TimeType | None = None
     duration_minutes: int | None = None
+    lng: float | None = None
+    lat: float | None = None
+    address: str | None = None
     notes: str | None = None
 
 
@@ -161,6 +182,9 @@ class ActivityResponse(BaseModel):
     date: DateType | None
     start_time: TimeType | None
     duration_minutes: int | None
+    lng: float | None
+    lat: float | None
+    address: str
     notes: str
     created_at: datetime
     updated_at: datetime

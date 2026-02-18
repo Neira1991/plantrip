@@ -14,10 +14,10 @@ test.describe('Activity management', () => {
     await page.goto(`/trip/${trip.id}`)
     await expect(page.getByTestId('trip-header-name')).toBeVisible()
     await page.getByTestId('btn-open-itinerary').click()
-    await expect(page.getByTestId('stop-card')).toBeVisible()
+    await expect(page.getByTestId('day-section')).toBeVisible()
 
     // Type in the add-activity input
-    const addInput = page.getByTestId('activity-add-input')
+    const addInput = page.getByTestId('add-activity-input')
     await addInput.fill('Visit Eiffel Tower')
     await addInput.press('Enter')
 
@@ -34,11 +34,11 @@ test.describe('Activity management', () => {
     await page.getByTestId('btn-open-itinerary').click()
     await expect(page.getByTestId('activity-item')).toBeVisible()
 
-    // Click the title to enter edit mode
-    await page.getByTestId('activity-title').click()
+    // Click the activity item to enter edit mode
+    await page.getByTestId('activity-item').click()
 
     // Change the text
-    const editInput = page.getByTestId('activity-edit-input')
+    const editInput = page.getByTestId('activity-title-input')
     await editInput.fill('Updated Activity')
     await editInput.press('Enter')
 
@@ -54,8 +54,8 @@ test.describe('Activity management', () => {
     await page.getByTestId('btn-open-itinerary').click()
     await expect(page.getByTestId('activity-item')).toBeVisible()
 
-    // Click delete
-    await page.getByTestId('btn-delete-activity').click()
+    // Click delete (the X button on the activity item)
+    await page.getByTestId('btn-remove-activity').click()
 
     // Verify gone
     await expect(page.getByTestId('activity-item')).not.toBeVisible()

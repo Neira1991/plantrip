@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,6 +11,18 @@ from app.models import Activity, Movement, Trip, TripStop, User
 from app.schemas import TripStopCreate, TripStopReorder, TripStopResponse, TripStopUpdate
 
 router = APIRouter(tags=["stops"])
+
+
+async def recalculate_end_date(trip_id: UUID, db: AsyncSession) -> None:
+    trip = await db.get(Trip, trip_id)
+    if not trip:
+        return
+    total_nights = (await db.execute(
+        select(func.coalesce(func.sum(TripStop.nights), 0))
+        .where(TripStop.trip_id == trip_id)
+    )).scalar()
+    trip.end_date = trip.start_date + timedelta(days=max(total_nights - 1, 0))
+    trip.updated_at = datetime.utcnow()
 
 
 async def _verify_trip_ownership(trip_id: UUID, user: User, db: AsyncSession) -> Trip:
@@ -69,8 +81,11 @@ async def create_stop(
         lng=data.lng,
         lat=data.lat,
         notes=data.notes,
+        nights=data.nights,
     )
     db.add(stop)
+    await db.flush()
+    await recalculate_end_date(trip_id, db)
     await db.commit()
     await db.refresh(stop)
     return stop
@@ -86,9 +101,14 @@ async def update_stop(
     stop = await _verify_stop_ownership(stop_id, user, db)
 
     update_data = data.model_dump(exclude_unset=True)
+    nights_changed = "nights" in update_data
     for key, value in update_data.items():
         setattr(stop, key, value)
     stop.updated_at = datetime.utcnow()
+
+    if nights_changed:
+        await db.flush()
+        await recalculate_end_date(stop.trip_id, db)
 
     await db.commit()
     await db.refresh(stop)
@@ -132,6 +152,7 @@ async def delete_stop(
         s.sort_index = i
         s.updated_at = datetime.utcnow()
 
+    await recalculate_end_date(trip_id, db)
     await db.commit()
 
 

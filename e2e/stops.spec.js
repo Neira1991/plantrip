@@ -30,8 +30,8 @@ test.describe('Stop management', () => {
 
     // Reopen itinerary to see the stop
     await page.getByTestId('btn-open-itinerary').click()
-    await expect(page.getByTestId('stop-card')).toBeVisible()
-    await expect(page.getByTestId('stop-name').first()).toHaveText('Paris')
+    await expect(page.getByTestId('day-section')).toBeVisible()
+    await expect(page.getByTestId('day-section').first()).toContainText('Paris')
   })
 
   test('add multiple stops and verify numbering', async ({ page, api, mockMapbox }) => {
@@ -44,14 +44,14 @@ test.describe('Stop management', () => {
     await expect(page.getByTestId('trip-header-name')).toBeVisible()
     await page.getByTestId('btn-open-itinerary').click()
 
-    // Verify 3 stops with correct names
-    const stopCards = page.getByTestId('stop-card')
-    await expect(stopCards).toHaveCount(3)
+    // Verify 3 day sections (each stop has 1 night by default)
+    const daySections = page.getByTestId('day-section')
+    await expect(daySections).toHaveCount(3)
 
-    const stopNames = page.getByTestId('stop-name')
-    await expect(stopNames.nth(0)).toHaveText('Paris')
-    await expect(stopNames.nth(1)).toHaveText('Lyon')
-    await expect(stopNames.nth(2)).toHaveText('Marseille')
+    // Verify city names in day headers
+    await expect(daySections.nth(0)).toContainText('Paris')
+    await expect(daySections.nth(1)).toContainText('Lyon')
+    await expect(daySections.nth(2)).toContainText('Marseille')
   })
 
   test('delete a stop and verify renumbering', async ({ page, api }) => {
@@ -62,18 +62,18 @@ test.describe('Stop management', () => {
     await page.goto(`/trip/${trip.id}`)
     await expect(page.getByTestId('trip-header-name')).toBeVisible()
     await page.getByTestId('btn-open-itinerary').click()
-    await expect(page.getByTestId('stop-card')).toHaveCount(3)
+    await expect(page.getByTestId('day-section')).toHaveCount(3)
 
-    // Remove the middle stop (Lyon)
+    // Remove the middle stop (Lyon) - it's the second day section
     const removeBtn = page.getByTestId('btn-remove-stop').nth(1)
     await removeBtn.click()
-    await page.getByTestId('btn-confirm-remove-stop').click()
+    await page.getByTestId('btn-confirm-remove').click()
 
-    // Verify Lyon is gone, 2 stops remain
-    await expect(page.getByTestId('stop-card')).toHaveCount(2)
-    const stopNames = page.getByTestId('stop-name')
-    await expect(stopNames.nth(0)).toHaveText('Paris')
-    await expect(stopNames.nth(1)).toHaveText('Marseille')
+    // Verify Lyon is gone, 2 day sections remain
+    await expect(page.getByTestId('day-section')).toHaveCount(2)
+    const daySections = page.getByTestId('day-section')
+    await expect(daySections.nth(0)).toContainText('Paris')
+    await expect(daySections.nth(1)).toContainText('Marseille')
   })
 
   test('reorder stops and see toast about movements cleared', async ({ page, api }) => {
@@ -92,14 +92,15 @@ test.describe('Stop management', () => {
     await page.goto(`/trip/${trip.id}`)
     await expect(page.getByTestId('trip-header-name')).toBeVisible()
     await page.getByTestId('btn-open-itinerary').click()
-    await expect(page.getByTestId('stop-card')).toHaveCount(3)
+    await expect(page.getByTestId('day-section')).toHaveCount(3)
 
     // Move first stop down
     await page.getByTestId('btn-move-down').first().click()
 
     // Verify new order
-    await expect(page.getByTestId('stop-name').nth(0)).toHaveText('Lyon')
-    await expect(page.getByTestId('stop-name').nth(1)).toHaveText('Paris')
+    const daySections = page.getByTestId('day-section')
+    await expect(daySections.nth(0)).toContainText('Lyon')
+    await expect(daySections.nth(1)).toContainText('Paris')
 
     // Toast about movements cleared
     await expect(page.getByTestId('itinerary-toast')).toBeVisible()

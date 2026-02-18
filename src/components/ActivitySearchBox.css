@@ -1,0 +1,53 @@
+.activity-search-container {
+  position: relative;
+}
+
+.activity-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.activity-search-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+
+.activity-search-option:hover,
+.activity-search-option.active {
+  background: #252540;
+}
+
+.activity-search-option + .activity-search-option {
+  border-top: 1px solid #222238;
+}
+
+.activity-search-name {
+  font-size: 0.8rem;
+  color: #e0e0e0;
+}
+
+.activity-search-address {
+  font-size: 0.7rem;
+  color: #777;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

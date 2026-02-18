@@ -21,8 +21,7 @@ export const tripRepository = {
     const tripData = {
       name: data.name || `${country?.name || ''} Trip`,
       countryCode: data.countryCode,
-      startDate: data.startDate || null,
-      endDate: data.endDate || null,
+      start_date: data.startDate || null,
       status: data.status || 'planning',
       notes: data.notes || '',
     }
@@ -36,7 +35,9 @@ export const tripRepository = {
   },
 
   async update(id, updates) {
-    return apiAdapter.put(`/trips/${id}`, updates)
+    // Strip endDate/end_date - it's read-only, computed server-side
+    const { endDate, end_date, ...payload } = updates
+    return apiAdapter.put(`/trips/${id}`, payload)
   },
 
   async delete(id) {

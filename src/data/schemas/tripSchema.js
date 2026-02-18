@@ -9,14 +9,12 @@ export function validateTrip(data) {
     errors.push('Invalid country')
   }
 
-  if (data.name && data.name.length > 200) {
-    errors.push('Trip name must be 200 characters or less')
+  if (!data.startDate && !data.start_date) {
+    errors.push('Start date is required')
   }
 
-  if (data.startDate && data.endDate) {
-    if (new Date(data.endDate) < new Date(data.startDate)) {
-      errors.push('End date must be after start date')
-    }
+  if (data.name && data.name.length > 200) {
+    errors.push('Trip name must be 200 characters or less')
   }
 
   if (data.notes && data.notes.length > 10000) {

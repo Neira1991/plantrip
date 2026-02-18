@@ -161,6 +161,23 @@ input[type="date"].form-input {
   color-scheme: dark;
 }
 
+.form-readonly {
+  padding: 12px 16px;
+  font-size: 1rem;
+  color: #ccc;
+  background: #1a1a1a;
+  border: 1px solid #222;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-readonly-hint {
+  font-size: 0.8rem;
+  color: #666;
+}
+
 .form-error-message {
   display: block;
   margin-top: 6px;

@@ -14,10 +14,11 @@ const MOVEMENT_STYLES = {
   other: { color: '#666', dasharray: [2, 2] },
 }
 
-export default function MapboxMap({ countryName, stops = [], movements = [] }) {
+export default function MapboxMap({ countryName, stops = [], movements = [], activities = [] }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markersRef = useRef([])
+  const activityMarkersRef = useRef([])
   const stopsRef = useRef(stops)
   stopsRef.current = stops
 
@@ -57,7 +58,14 @@ export default function MapboxMap({ countryName, stops = [], movements = [] }) {
         .catch(() => {})
     }
 
+    // Resize map when container dimensions change
+    const ro = new ResizeObserver(() => {
+      setTimeout(() => m.resize(), 0)
+    })
+    ro.observe(containerRef.current)
+
     return () => {
+      ro.disconnect()
       m.remove()
       mapRef.current = null
     }
@@ -177,6 +185,41 @@ export default function MapboxMap({ countryName, stops = [], movements = [] }) {
 
     return () => clearRoutes()
   }, [stops, movements])
+
+  // Sync activity markers
+  useEffect(() => {
+    const m = mapRef.current
+    if (!m) return
+
+    // Clear old activity markers
+    activityMarkersRef.current.forEach(mk => mk.remove())
+    activityMarkersRef.current = []
+
+    activities.forEach(activity => {
+      const el = document.createElement('div')
+      el.className = 'activity-marker'
+
+      const popup = new mapboxgl.Popup({ offset: 10, closeButton: false })
+        .setText(activity.title)
+
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat([activity.lng, activity.lat])
+        .setPopup(popup)
+        .addTo(m)
+
+      activityMarkersRef.current.push(marker)
+    })
+
+    // Re-fit bounds to include activity markers
+    if (stops.length > 0 || activities.length > 0) {
+      const bounds = new mapboxgl.LngLatBounds()
+      stops.forEach(s => bounds.extend([s.lng, s.lat]))
+      activities.forEach(a => bounds.extend([a.lng, a.lat]))
+      const fit = () => m.fitBounds(bounds, { padding: 60, maxZoom: 10, duration: 600 })
+      if (m.loaded()) fit()
+      else m.once('load', fit)
+    }
+  }, [activities, stops])
 
   if (!MAPBOX_TOKEN) {
     return (

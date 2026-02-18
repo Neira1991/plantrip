@@ -27,7 +27,6 @@ test.describe('Trip CRUD', () => {
     await page.getByTestId('trip-name-input').fill('Summer in France')
     await page.getByTestId('trip-status-select').selectOption('planning')
     await page.getByTestId('trip-start-date').fill('2026-06-01')
-    await page.getByTestId('trip-end-date').fill('2026-06-15')
     await page.getByTestId('trip-notes-input').fill('A wonderful summer trip')
 
     // Save
@@ -61,7 +60,6 @@ test.describe('Trip CRUD', () => {
     await page.getByTestId('trip-name-input').fill('Updated Name')
     await page.getByTestId('trip-status-select').selectOption('booked')
     await page.getByTestId('trip-start-date').fill('2026-07-01')
-    await page.getByTestId('trip-end-date').fill('2026-07-20')
 
     // Save
     await page.getByTestId('btn-save-trip').click()

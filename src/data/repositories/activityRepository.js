@@ -18,6 +18,9 @@ export const activityRepository = {
       date: data.date ?? null,
       startTime: data.startTime ?? null,
       durationMinutes: data.durationMinutes ?? null,
+      lng: data.lng ?? null,
+      lat: data.lat ?? null,
+      address: data.address ?? '',
       notes: data.notes ?? '',
     })
   },

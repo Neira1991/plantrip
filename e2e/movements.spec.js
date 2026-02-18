@@ -16,18 +16,18 @@ test.describe('Movement management', () => {
     await page.goto(`/trip/${trip.id}`)
     await expect(page.getByTestId('trip-header-name')).toBeVisible()
     await page.getByTestId('btn-open-itinerary').click()
-    await expect(page.getByTestId('stop-card').first()).toBeVisible()
+    await expect(page.getByTestId('day-section').first()).toBeVisible()
 
     // Click "+ transport" button
     await page.getByTestId('btn-add-movement').click()
 
     // Select train type (should be default, but click to be sure)
-    const trainBtn = page.getByTestId('movement-type-btn').first()
+    const trainBtn = page.locator('.movement-type-btn').first()
     await trainBtn.click()
 
     // Fill carrier and duration
-    await page.locator('.movement-input[placeholder="Carrier (optional)"]').fill('TGV')
-    await page.locator('.movement-input[placeholder="Duration (min)"]').fill('120')
+    await page.getByTestId('movement-carrier-input').fill('TGV')
+    await page.getByTestId('movement-duration-input').fill('120')
 
     // Save
     await page.getByTestId('btn-save-movement').click()
@@ -58,12 +58,12 @@ test.describe('Movement management', () => {
     await page.getByTestId('movement-summary').click()
 
     // Change to plane
-    const planeBtn = page.getByTestId('movement-type-btn').nth(2)
+    const planeBtn = page.locator('.movement-type-btn').nth(2)
     await planeBtn.click()
 
     // Update carrier
-    await page.locator('.movement-input[placeholder="Carrier (optional)"]').fill('Air France')
-    await page.locator('.movement-input[placeholder="Duration (min)"]').fill('60')
+    await page.getByTestId('movement-carrier-input').fill('Air France')
+    await page.getByTestId('movement-duration-input').fill('60')
 
     // Save
     await page.getByTestId('btn-save-movement').click()

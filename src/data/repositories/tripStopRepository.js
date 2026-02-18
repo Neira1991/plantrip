@@ -10,6 +10,7 @@ export const tripStopRepository = {
       name: data.name,
       lng: data.lng,
       lat: data.lat,
+      nights: data.nights || 1,
       notes: data.notes || '',
     })
   },

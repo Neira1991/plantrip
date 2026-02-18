@@ -1,0 +1,122 @@
+.stop-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #141414;
+  border: 1px solid #222;
+  border-radius: 8px;
+  margin: 8px 16px;
+  gap: 12px;
+}
+
+.nights-editor {
+  flex: 1;
+}
+
+.nights-badge {
+  background: rgba(102, 126, 234, 0.15);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: #7e94ff;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.nights-badge:hover {
+  background: rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.nights-edit-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nights-input {
+  width: 50px;
+  background: #1a1a1a;
+  border: 1px solid #667eea;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  font-family: inherit;
+  outline: none;
+}
+
+.nights-label {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.stop-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: #555;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+  font-family: inherit;
+}
+
+.btn-icon:hover {
+  color: #aaa;
+  background: #1a1a1a;
+}
+
+.btn-remove:hover {
+  color: #e74c3c;
+  background: rgba(231, 76, 60, 0.1);
+}
+
+.confirm-delete {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-danger-sm {
+  background: rgba(231, 76, 60, 0.2);
+  border: none;
+  color: #e74c3c;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+@media (max-width: 480px) {
+  .stop-controls {
+    padding: 10px;
+    margin: 8px 12px;
+  }
+
+  .nights-badge,
+  .nights-input,
+  .nights-label {
+    font-size: 0.8rem;
+  }
+
+  .btn-icon {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .btn-danger-sm {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+}

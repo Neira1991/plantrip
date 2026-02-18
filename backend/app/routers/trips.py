@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Activity, Movement, Trip, TripStop, User
+from app.routers.stops import recalculate_end_date
 from app.schemas import (
     ItineraryResponse,
     ItineraryStopResponse,
@@ -48,7 +49,7 @@ async def create_trip(
         name=data.name,
         country_code=data.country_code,
         start_date=data.start_date,
-        end_date=data.end_date,
+        end_date=data.start_date,
         status=data.status,
         notes=data.notes,
     )
@@ -82,9 +83,14 @@ async def update_trip(
         raise HTTPException(status_code=404, detail="Trip not found")
 
     update_data = data.model_dump(exclude_unset=True)
+    start_date_changed = "start_date" in update_data
     for key, value in update_data.items():
         setattr(trip, key, value)
     trip.updated_at = datetime.utcnow()
+
+    if start_date_changed:
+        await db.flush()
+        await recalculate_end_date(trip_id, db)
 
     await db.commit()
     await db.refresh(trip)

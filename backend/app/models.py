@@ -27,7 +27,7 @@ class Trip(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     country_code: Mapped[str] = mapped_column(String(10), nullable=False)
-    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="planning")
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
@@ -43,6 +43,7 @@ class TripStop(Base):
     __tablename__ = "trip_stops"
     __table_args__ = (
         UniqueConstraint("trip_id", "sort_index", name="uq_trip_stop_sort"),
+        CheckConstraint("nights >= 1", name="ck_trip_stop_nights_min"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -52,6 +53,7 @@ class TripStop(Base):
     lng: Mapped[float] = mapped_column(Float, nullable=False)
     lat: Mapped[float] = mapped_column(Float, nullable=False)
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    nights: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -104,6 +106,9 @@ class Activity(Base):
     date: Mapped[date | None] = mapped_column(Date, nullable=True)
     start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    lng: Mapped[float | None] = mapped_column(Float, nullable=True)
+    lat: Mapped[float | None] = mapped_column(Float, nullable=True)
+    address: Mapped[str] = mapped_column(Text, default="")
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)

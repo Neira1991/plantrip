@@ -75,6 +75,9 @@ async def create_activity(
         date=data.date,
         start_time=data.start_time,
         duration_minutes=data.duration_minutes,
+        lng=data.lng,
+        lat=data.lat,
+        address=data.address,
         notes=data.notes,
     )
     db.add(activity)

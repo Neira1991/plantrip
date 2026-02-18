@@ -1,0 +1,289 @@
+.day-section {
+  margin-bottom: 8px;
+}
+
+.day-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #0f0f0f;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.day-number {
+  width: 55px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 11px;
+  flex-shrink: 0;
+  padding: 0 8px;
+}
+
+.day-date {
+  font-size: 0.75rem;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.day-city {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #ccc;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-activities {
+  background: #0f0f0f;
+  padding: 4px 0;
+}
+
+.add-activity-row {
+  padding: 0 16px 4px;
+}
+
+.add-activity-input {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #555;
+  font-size: 0.8rem;
+  padding: 8px 0;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.add-activity-input::placeholder {
+  color: #333;
+}
+
+.add-activity-input:focus {
+  color: #ccc;
+}
+
+.add-activity-input:focus::placeholder {
+  color: #555;
+}
+
+/* Movement connector */
+.movement-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  background: #0f0f0f;
+}
+
+.movement-line {
+  width: 1px;
+  height: 10px;
+  background: #2a2a2a;
+}
+
+.movement-add {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+}
+
+.btn-add-movement {
+  background: none;
+  border: 1px dashed #2a2a2a;
+  color: #444;
+  font-size: 0.75rem;
+  font-family: inherit;
+  padding: 4px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.btn-add-movement:hover {
+  color: #888;
+  border-color: #555;
+}
+
+.movement-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #141414;
+  border: 1px solid #222;
+  color: #888;
+  font-size: 0.75rem;
+  font-family: inherit;
+  padding: 5px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.movement-summary:hover {
+  border-color: #444;
+}
+
+.movement-icon {
+  font-size: 0.85rem;
+}
+
+.movement-label {
+  color: #999;
+}
+
+.movement-form {
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.movement-type-grid {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.movement-type-btn {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #222;
+  font-size: 0.85rem;
+  padding: 6px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.movement-type-btn.active {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.movement-input {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #222;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 6px;
+  box-sizing: border-box;
+}
+
+.movement-input:focus {
+  border-color: #667eea;
+}
+
+.movement-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.movement-actions .btn-cancel,
+.movement-actions .btn-delete,
+.movement-actions .btn-save {
+  font-size: 0.75rem;
+  font-family: inherit;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.movement-actions .btn-cancel {
+  background: #1a1a1a;
+  color: #888;
+}
+
+.movement-actions .btn-delete {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+}
+
+.movement-actions .btn-save {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .day-header {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .day-number {
+    width: 55px;
+    font-size: 0.75rem;
+  }
+
+  .day-date {
+    font-size: 0.8rem;
+  }
+
+  .day-city {
+    font-size: 0.9rem;
+  }
+
+  .add-activity-row {
+    padding: 0 12px 6px;
+  }
+
+  .add-activity-input {
+    font-size: 0.85rem;
+    padding: 10px 0;
+  }
+
+  .btn-add-movement {
+    padding: 6px 16px;
+    font-size: 0.8rem;
+  }
+
+  .movement-summary {
+    padding: 7px 16px;
+    font-size: 0.8rem;
+  }
+
+  .movement-icon {
+    font-size: 0.9rem;
+  }
+
+  .movement-form {
+    padding: 12px;
+  }
+
+  .movement-type-btn {
+    font-size: 1rem;
+    padding: 8px 0;
+  }
+
+  .movement-input {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+  }
+
+  .movement-actions .btn-cancel,
+  .movement-actions .btn-delete,
+  .movement-actions .btn-save {
+    font-size: 0.8rem;
+    padding: 6px 14px;
+  }
+}

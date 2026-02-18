@@ -1,0 +1,200 @@
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 6px 16px;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.activity-item:hover {
+  background: #141414;
+}
+
+.activity-item.editing {
+  flex-direction: column;
+  background: #141414;
+  cursor: default;
+  padding: 10px 16px;
+  gap: 8px;
+}
+
+.activity-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.activity-time-badge {
+  font-size: 0.7rem;
+  color: #7e94ff;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.activity-title {
+  flex: 1;
+  font-size: 0.8rem;
+  color: #999;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-duration-badge {
+  font-size: 0.7rem;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.activity-location-badge {
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.activity-delete-btn {
+  background: none;
+  border: none;
+  color: #333;
+  font-size: 0.65rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.activity-item:hover .activity-delete-btn {
+  opacity: 1;
+}
+
+.activity-delete-btn:hover {
+  color: #e74c3c;
+}
+
+/* Edit mode */
+.activity-edit-main {
+  width: 100%;
+}
+
+.activity-title-input {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.activity-title-input:focus {
+  border-color: #667eea;
+}
+
+.activity-time-fields {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.activity-time-input,
+.activity-duration-input {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  font-family: inherit;
+  outline: none;
+}
+
+.activity-time-input {
+  flex: 0 0 120px;
+}
+
+.activity-duration-input {
+  flex: 1;
+}
+
+.activity-time-input:focus,
+.activity-duration-input:focus {
+  border-color: #667eea;
+}
+
+.activity-edit-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.btn-save-activity,
+.btn-cancel-activity {
+  font-size: 0.75rem;
+  font-family: inherit;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-save-activity {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+}
+
+.btn-cancel-activity {
+  background: #1a1a1a;
+  color: #888;
+}
+
+@media (max-width: 480px) {
+  .activity-item {
+    padding: 8px 12px;
+  }
+
+  .activity-item.editing {
+    padding: 12px;
+  }
+
+  .activity-time-badge,
+  .activity-duration-badge {
+    font-size: 0.75rem;
+  }
+
+  .activity-title {
+    font-size: 0.85rem;
+  }
+
+  .activity-delete-btn {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    opacity: 1; /* Always show on mobile */
+  }
+
+  .activity-title-input {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
+
+  .activity-time-input,
+  .activity-duration-input {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+
+  .btn-save-activity,
+  .btn-cancel-activity {
+    font-size: 0.8rem;
+    padding: 6px 14px;
+  }
+}

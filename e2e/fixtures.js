@@ -80,8 +80,7 @@ class ApiHelper {
     return this.request('POST', '/trips', {
       name: data.name || 'Test Trip',
       country_code: data.countryCode || data.country_code || 'FR',
-      start_date: data.startDate || data.start_date || null,
-      end_date: data.endDate || data.end_date || null,
+      start_date: data.startDate || data.start_date || '2026-06-01',
       status: data.status || 'planning',
       notes: data.notes || '',
     })
@@ -105,7 +104,12 @@ class ApiHelper {
       name: data.name || 'Test City',
       lng: data.lng || 2.3522,
       lat: data.lat || 48.8566,
+      nights: data.nights || 1,
     })
+  }
+
+  async updateStop(stopId, data) {
+    return this.request('PUT', `/stops/${stopId}`, data)
   }
 
   async getStops(tripId) {
@@ -120,6 +124,9 @@ class ApiHelper {
   async createActivity(stopId, data) {
     return this.request('POST', `/stops/${stopId}/activities`, {
       title: data.title || 'Test Activity',
+      lng: data.lng ?? null,
+      lat: data.lat ?? null,
+      address: data.address ?? '',
     })
   }
 
@@ -203,6 +210,66 @@ export const test = base.extend({
     })
 
     await use(mockCities)
+  },
+
+  /** Intercept Mapbox Search Box API (suggest + retrieve) with mock responses */
+  mockSearchBox: async ({ page }, use) => {
+    const suggestResponse = {
+      suggestions: [
+        {
+          mapbox_id: 'poi.eiffel',
+          name: 'Eiffel Tower',
+          full_address: 'Champ de Mars, 5 Avenue Anatole France, 75007 Paris, France',
+        },
+        {
+          mapbox_id: 'poi.louvre',
+          name: 'Louvre Museum',
+          full_address: 'Rue de Rivoli, 75001 Paris, France',
+        },
+      ],
+    }
+
+    const retrieveResponses = {
+      'poi.eiffel': {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [2.2945, 48.8584] },
+          properties: { name: 'Eiffel Tower', full_address: 'Champ de Mars, 5 Avenue Anatole France, 75007 Paris, France' },
+        }],
+      },
+      'poi.louvre': {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [2.3376, 48.8606] },
+          properties: { name: 'Louvre Museum', full_address: 'Rue de Rivoli, 75001 Paris, France' },
+        }],
+      },
+    }
+
+    await page.route('**/api.mapbox.com/search/searchbox/v1/suggest**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(suggestResponse),
+      })
+    })
+
+    await page.route('**/api.mapbox.com/search/searchbox/v1/retrieve/**', async (route) => {
+      const url = route.request().url()
+      // Extract mapbox_id from URL: .../retrieve/{mapbox_id}?...
+      const match = url.match(/\/retrieve\/([^?]+)/)
+      const id = match?.[1] || ''
+      const response = retrieveResponses[id] || { type: 'FeatureCollection', features: [] }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(response),
+      })
+    })
+
+    await use({ suggestResponse, retrieveResponses })
   },
 })
 

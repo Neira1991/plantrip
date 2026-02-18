@@ -95,11 +95,16 @@
   vertical-align: top;
 }
 
-/* ── Map (fills all remaining space) ── */
+/* ── Content area (map + optional itinerary) ── */
+
+.trip-detail-content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
 
 .trip-detail-map {
   flex: 1;
-  width: 100%;
   min-height: 0;
 }
 
@@ -182,6 +187,23 @@
 /* ── Responsive ── */
 
 @media (max-width: 768px) {
+  .trip-detail-content {
+    flex-direction: column;
+  }
+
+  .trip-detail-content > .itinerary-panel {
+    order: -1;
+    flex: 1;
+    min-height: 0;
+    border-left: none;
+    border-bottom: 1px solid #222;
+  }
+
+  .trip-detail-content > .trip-detail-map {
+    flex: 0 0 35vh;
+    min-height: 200px;
+  }
+
   .trip-detail-header {
     padding: 10px 14px;
   }

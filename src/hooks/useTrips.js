@@ -20,5 +20,5 @@ export function useTrips() {
     [trips]
   )
 
-  return { trips, isLoading, error, createTrip, updateTrip, deleteTrip, clearError, findByCountry }
+  return { trips, isLoading, error, loadTrips, createTrip, updateTrip, deleteTrip, clearError, findByCountry }
 }

@@ -9,10 +9,17 @@ import { useItinerary } from '../hooks/useItinerary'
 import { countries } from '../data/static/countries'
 import './TripDetail.css'
 
-function formatDate(dateStr) {
+function formatDateShort(dateStr) {
   if (!dateStr) return null
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
     month: 'short', day: 'numeric',
+  })
+}
+
+function formatDateFull(dateStr) {
+  if (!dateStr) return null
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
   })
 }
 
@@ -20,7 +27,7 @@ export default function TripDetail() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { trips, createTrip, updateTrip, deleteTrip } = useTrips()
+  const { trips, createTrip, updateTrip, deleteTrip, loadTrips } = useTrips()
 
   const isNew = id === 'new'
   const countryParam = searchParams.get('country')
@@ -31,17 +38,21 @@ export default function TripDetail() {
   const tripId = trip?.id || null
   const {
     itinerary,
+    timeline,
     stops,
     movements,
+    activities,
     addStop,
+    updateStop,
     removeStop,
     reorderStop,
     addActivity,
     updateActivity,
     removeActivity,
     addMovement,
+    updateMovement,
     removeMovement,
-  } = useItinerary(tripId)
+  } = useItinerary(tripId, trip?.startDate)
 
   const [mode, setMode] = useState(isNew ? 'edit' : 'view')
   const [name, setName] = useState('')
@@ -95,13 +106,13 @@ export default function TripDetail() {
   }
 
   const dateRange = (trip?.startDate || trip?.endDate)
-    ? [formatDate(trip?.startDate), formatDate(trip?.endDate)].filter(Boolean).join(' – ')
+    ? [formatDateShort(trip?.startDate), formatDateShort(trip?.endDate)].filter(Boolean).join(' – ')
     : null
 
   function validate() {
     const errs = {}
-    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
-      errs.endDate = 'End date must be after start date'
+    if (!startDate) {
+      errs.startDate = 'Start date is required'
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -115,7 +126,6 @@ export default function TripDetail() {
         countryCode: country.code,
         name: name.trim() || `${country.name} Trip`,
         startDate: startDate || null,
-        endDate: endDate || null,
         status,
         notes: notes.trim(),
       }
@@ -159,6 +169,17 @@ export default function TripDetail() {
       lng: city.lng,
       lat: city.lat,
     })
+    await loadTrips() // Refresh trip to get updated end_date
+  }
+
+  async function handleUpdateStopNights(stopId, nights) {
+    await updateStop(stopId, { nights })
+    await loadTrips() // Refresh trip to get updated end_date
+  }
+
+  async function handleRemoveStop(tripId, stopId) {
+    await removeStop(tripId, stopId)
+    await loadTrips() // Refresh trip to get updated end_date
   }
 
   async function handleReorderStop(tid, fromIndex, toIndex) {
@@ -193,7 +214,7 @@ export default function TripDetail() {
           {!isNew && (
             <button
               className="btn-header-icon"
-              onClick={() => setShowItinerary(true)}
+              onClick={() => setShowItinerary(v => !v)}
               title="Itinerary"
               data-testid="btn-open-itinerary"
             >
@@ -209,32 +230,37 @@ export default function TripDetail() {
         </div>
       </header>
 
-      {/* ── Map (fills remaining space) ── */}
-      <div className="trip-detail-map">
-        <MapboxMap
-          countryName={country.name}
-          stops={stops}
-          movements={movements}
-        />
-      </div>
+      {/* ── Content area (map + optional itinerary) ── */}
+      <div className="trip-detail-content">
+        <div className="trip-detail-map">
+          <MapboxMap
+            countryName={country.name}
+            stops={stops}
+            movements={movements}
+            activities={activities.filter(a => a.lng != null && a.lat != null)}
+          />
+        </div>
 
-      {/* ── Itinerary panel ── */}
-      {showItinerary && (
-        <ItineraryPanel
-          itinerary={itinerary}
-          tripId={tripId}
-          onClose={() => setShowItinerary(false)}
-          onReorderStop={handleReorderStop}
-          onRemoveStop={removeStop}
-          onAddActivity={addActivity}
-          onUpdateActivity={updateActivity}
-          onRemoveActivity={removeActivity}
-          onSaveMovement={addMovement}
-          onDeleteMovement={removeMovement}
-          onOpenCitySearch={() => { setShowItinerary(false); setShowCitySearch(true) }}
-          toast={toast}
-        />
-      )}
+        {showItinerary && (
+          <ItineraryPanel
+            timeline={timeline}
+            tripId={tripId}
+            countryCode={country?.code}
+            onClose={() => setShowItinerary(false)}
+            onReorderStop={handleReorderStop}
+            onRemoveStop={handleRemoveStop}
+            onAddActivity={addActivity}
+            onUpdateActivity={updateActivity}
+            onRemoveActivity={removeActivity}
+            onSaveMovement={addMovement}
+            onUpdateMovement={updateMovement}
+            onDeleteMovement={removeMovement}
+            onUpdateNights={handleUpdateStopNights}
+            onOpenCitySearch={() => { setShowItinerary(false); setShowCitySearch(true) }}
+            toast={toast}
+          />
+        )}
+      </div>
 
       {/* ── Edit overlay ── */}
       {mode === 'edit' && (
@@ -272,26 +298,28 @@ export default function TripDetail() {
             </div>
 
             <div className="form-field">
-              <label className="form-label">Dates</label>
-              <div className="date-range">
-                <input
-                  type="date"
-                  className="form-input"
-                  data-testid="trip-start-date"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                />
-                <span className="date-separator">–</span>
-                <input
-                  type="date"
-                  className={`form-input ${errors.endDate ? 'error' : ''}`}
-                  data-testid="trip-end-date"
-                  value={endDate}
-                  onChange={e => { setEndDate(e.target.value); setErrors(prev => ({ ...prev, endDate: null })) }}
-                />
-              </div>
-              {errors.endDate && <span className="form-error-message">{errors.endDate}</span>}
+              <label className="form-label" htmlFor="trip-start-date">Start Date *</label>
+              <input
+                id="trip-start-date"
+                type="date"
+                className={`form-input ${errors.startDate ? 'error' : ''}`}
+                data-testid="trip-start-date"
+                value={startDate}
+                onChange={e => { setStartDate(e.target.value); setErrors(prev => ({ ...prev, startDate: null })) }}
+                required
+              />
+              {errors.startDate && <span className="form-error-message">{errors.startDate}</span>}
             </div>
+
+            {!isNew && trip?.endDate && (
+              <div className="form-field">
+                <label className="form-label">End Date</label>
+                <div className="form-readonly" data-testid="trip-end-date-display">
+                  {formatDateFull(trip.endDate)}
+                  <span className="form-readonly-hint">Computed from stops and nights</span>
+                </div>
+              </div>
+            )}
 
             <div className="form-field">
               <label className="form-label" htmlFor="trip-notes">Notes</label>
