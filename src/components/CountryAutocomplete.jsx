@@ -105,6 +105,7 @@ export default function CountryAutocomplete({ onSelect, onFirstMatch, initialVal
         ref={inputRef}
         type="text"
         className="autocomplete-input"
+        data-testid="country-search-input"
         placeholder="Where do you want to go?"
         value={query}
         onChange={handleChange}
@@ -126,6 +127,7 @@ export default function CountryAutocomplete({ onSelect, onFirstMatch, initialVal
               role="option"
               aria-selected={i === activeIndex}
               className={`autocomplete-item ${i === activeIndex ? 'active' : ''}`}
+              data-testid="country-option"
               onMouseEnter={() => setActiveIndex(i)}
               onMouseDown={(e) => {
                 e.preventDefault()

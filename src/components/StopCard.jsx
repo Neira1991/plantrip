@@ -32,23 +32,23 @@ export default function StopCard({
 
   return (
     <div className="stop-card-wrapper">
-      <div className="stop-card">
+      <div className="stop-card" data-testid="stop-card">
         <div className="stop-card-header">
           <span className="stop-number">{index + 1}</span>
-          <span className="stop-name">{stop.name}</span>
+          <span className="stop-name" data-testid="stop-name">{stop.name}</span>
           <div className="stop-actions">
             {index > 0 && (
-              <button className="stop-move-btn" onClick={() => onMoveUp(index)} title="Move up">↑</button>
+              <button className="stop-move-btn" data-testid="btn-move-up" onClick={() => onMoveUp(index)} title="Move up">↑</button>
             )}
             {index < totalStops - 1 && (
-              <button className="stop-move-btn" onClick={() => onMoveDown(index)} title="Move down">↓</button>
+              <button className="stop-move-btn" data-testid="btn-move-down" onClick={() => onMoveDown(index)} title="Move down">↓</button>
             )}
             {!showConfirmDelete ? (
-              <button className="stop-remove-btn" onClick={() => setShowConfirmDelete(true)} title="Remove stop">✕</button>
+              <button className="stop-remove-btn" data-testid="btn-remove-stop" onClick={() => setShowConfirmDelete(true)} title="Remove stop">✕</button>
             ) : (
               <div className="stop-confirm-delete">
-                <button className="stop-confirm-yes" onClick={() => onRemove(stop.id)}>Delete</button>
-                <button className="stop-confirm-no" onClick={() => setShowConfirmDelete(false)}>Keep</button>
+                <button className="stop-confirm-yes" data-testid="btn-confirm-remove-stop" onClick={() => onRemove(stop.id)}>Delete</button>
+                <button className="stop-confirm-no" data-testid="btn-cancel-remove-stop" onClick={() => setShowConfirmDelete(false)}>Keep</button>
               </div>
             )}
           </div>
@@ -71,6 +71,7 @@ export default function StopCard({
           <input
             type="text"
             className="activity-add-input"
+            data-testid="activity-add-input"
             value={newActivity}
             onChange={e => setNewActivity(e.target.value)}
             onKeyDown={handleKeyDown}

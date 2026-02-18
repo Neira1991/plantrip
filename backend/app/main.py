@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -27,6 +28,10 @@ app.include_router(trips.router, prefix="/api")
 app.include_router(stops.router, prefix="/api")
 app.include_router(movements.router, prefix="/api")
 app.include_router(activities.router, prefix="/api")
+
+if os.environ.get("TESTING", "").lower() == "true":
+    from app.routers import test_utils
+    app.include_router(test_utils.router, prefix="/api")
 
 
 @app.get("/health")

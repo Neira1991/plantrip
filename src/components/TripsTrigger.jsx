@@ -4,6 +4,7 @@ export default function TripsTrigger({ isOpen, onToggle }) {
   return (
     <button
       className={`trips-trigger ${isOpen ? 'active' : ''}`}
+      data-testid="btn-trips-panel"
       onClick={onToggle}
       aria-expanded={isOpen}
       aria-controls="trips-panel"

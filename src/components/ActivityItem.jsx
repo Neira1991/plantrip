@@ -21,10 +21,11 @@ export default function ActivityItem({ activity, onUpdate, onDelete }) {
 
   if (editing) {
     return (
-      <div className="activity-item editing">
+      <div className="activity-item editing" data-testid="activity-item">
         <input
           type="text"
           className="activity-edit-input"
+          data-testid="activity-edit-input"
           value={title}
           onChange={e => setTitle(e.target.value)}
           onBlur={handleSave}
@@ -37,9 +38,9 @@ export default function ActivityItem({ activity, onUpdate, onDelete }) {
   }
 
   return (
-    <div className="activity-item">
-      <span className="activity-title" onClick={() => setEditing(true)}>{activity.title}</span>
-      <button className="activity-delete-btn" onClick={() => onDelete(activity.id)} title="Remove">
+    <div className="activity-item" data-testid="activity-item">
+      <span className="activity-title" data-testid="activity-title" onClick={() => setEditing(true)}>{activity.title}</span>
+      <button className="activity-delete-btn" data-testid="btn-delete-activity" onClick={() => onDelete(activity.id)} title="Remove">
         ✕
       </button>
     </div>

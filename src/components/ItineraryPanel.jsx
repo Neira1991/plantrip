@@ -19,7 +19,7 @@ export default function ItineraryPanel({
 }) {
   return (
     <div className="itinerary-panel-overlay" onClick={onClose}>
-      <div className="itinerary-panel" onClick={e => e.stopPropagation()}>
+      <div className="itinerary-panel" data-testid="itinerary-panel" onClick={e => e.stopPropagation()}>
         <div className="itinerary-panel-header">
           <h2 className="itinerary-panel-title">
             Itinerary
@@ -30,7 +30,7 @@ export default function ItineraryPanel({
 
         <div className="itinerary-panel-body">
           {itinerary.length === 0 ? (
-            <div className="itinerary-empty">
+            <div className="itinerary-empty" data-testid="itinerary-empty">
               <p>No stops yet</p>
               <p className="itinerary-empty-hint">Add your first stop to start building your itinerary</p>
             </div>
@@ -62,12 +62,12 @@ export default function ItineraryPanel({
         </div>
 
         <div className="itinerary-panel-footer">
-          <button className="itinerary-add-stop-btn" onClick={onOpenCitySearch}>
+          <button className="itinerary-add-stop-btn" data-testid="btn-add-stop" onClick={onOpenCitySearch}>
             + Add stop
           </button>
         </div>
 
-        {toast && <div className="itinerary-toast">{toast}</div>}
+        {toast && <div className="itinerary-toast" data-testid="itinerary-toast">{toast}</div>}
       </div>
     </div>
   )

@@ -177,13 +177,13 @@ export default function TripDetail() {
     <div className="trip-detail">
       {/* ── Header ── */}
       <header className="trip-detail-header">
-        <button className="btn-header-icon" onClick={() => navigate('/')} title="Home">
+        <button className="btn-header-icon" onClick={() => navigate('/')} title="Home" data-testid="btn-home">
           ←
         </button>
 
         <div className="trip-header-center">
-          <span className="trip-header-name">{trip?.name || name}</span>
-          <span className={`trip-header-status status-${trip?.status || status}`}>
+          <span className="trip-header-name" data-testid="trip-header-name">{trip?.name || name}</span>
+          <span className={`trip-header-status status-${trip?.status || status}`} data-testid="trip-header-status">
             {trip?.status || status}
           </span>
           {dateRange && <span className="trip-header-dates">{dateRange}</span>}
@@ -195,13 +195,14 @@ export default function TripDetail() {
               className="btn-header-icon"
               onClick={() => setShowItinerary(true)}
               title="Itinerary"
+              data-testid="btn-open-itinerary"
             >
               📍{stops.length > 0 && <span className="cities-badge">{stops.length}</span>}
             </button>
           )}
 
           {mode === 'view' && !isNew && (
-            <button className="btn-header-icon" onClick={() => setMode('edit')} title="Edit trip">
+            <button className="btn-header-icon" onClick={() => setMode('edit')} title="Edit trip" data-testid="btn-edit-trip">
               ✏️
             </button>
           )}
@@ -245,6 +246,7 @@ export default function TripDetail() {
                 id="trip-name"
                 type="text"
                 className="form-input"
+                data-testid="trip-name-input"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="e.g., Summer in Paris"
@@ -258,6 +260,7 @@ export default function TripDetail() {
               <select
                 id="trip-status"
                 className="form-input"
+                data-testid="trip-status-select"
                 value={status}
                 onChange={e => setStatus(e.target.value)}
               >
@@ -274,6 +277,7 @@ export default function TripDetail() {
                 <input
                   type="date"
                   className="form-input"
+                  data-testid="trip-start-date"
                   value={startDate}
                   onChange={e => setStartDate(e.target.value)}
                 />
@@ -281,6 +285,7 @@ export default function TripDetail() {
                 <input
                   type="date"
                   className={`form-input ${errors.endDate ? 'error' : ''}`}
+                  data-testid="trip-end-date"
                   value={endDate}
                   onChange={e => { setEndDate(e.target.value); setErrors(prev => ({ ...prev, endDate: null })) }}
                 />
@@ -293,6 +298,7 @@ export default function TripDetail() {
               <textarea
                 id="trip-notes"
                 className="form-input form-textarea"
+                data-testid="trip-notes-input"
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 placeholder="Any details about your trip..."
@@ -304,7 +310,7 @@ export default function TripDetail() {
             {!isNew && (
               <div className="form-field">
                 {!showDelete ? (
-                  <button type="button" className="delete-trip-link" onClick={() => setShowDelete(true)}>
+                  <button type="button" className="delete-trip-link" data-testid="btn-delete-trip" onClick={() => setShowDelete(true)}>
                     Delete trip
                   </button>
                 ) : (
@@ -314,8 +320,8 @@ export default function TripDetail() {
             )}
 
             <div className="trip-edit-actions">
-              <button type="button" className="btn-cancel" onClick={handleCancel}>Cancel</button>
-              <button type="button" className="btn-save" onClick={handleSave} disabled={saving}>
+              <button type="button" className="btn-cancel" data-testid="btn-cancel-edit" onClick={handleCancel}>Cancel</button>
+              <button type="button" className="btn-save" data-testid="btn-save-trip" onClick={handleSave} disabled={saving}>
                 {saving ? 'Saving...' : isNew ? 'Create Trip' : 'Save'}
               </button>
             </div>

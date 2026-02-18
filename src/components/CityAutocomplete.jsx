@@ -73,6 +73,7 @@ export default function CityAutocomplete({ countryCode, onSelect, onClose }) {
           ref={inputRef}
           type="text"
           className="city-search-input"
+          data-testid="city-search-input"
           value={query}
           onChange={handleInput}
           placeholder="Search for a city..."
@@ -81,7 +82,7 @@ export default function CityAutocomplete({ countryCode, onSelect, onClose }) {
         {results.length > 0 && (
           <ul className="city-search-results">
             {results.map(r => (
-              <li key={r.id} className="city-search-result" onClick={() => handleSelect(r)}>
+              <li key={r.id} className="city-search-result" data-testid="city-search-result" onClick={() => handleSelect(r)}>
                 <span className="city-result-name">{r.name}</span>
                 <span className="city-result-region">{r.fullName}</span>
               </li>

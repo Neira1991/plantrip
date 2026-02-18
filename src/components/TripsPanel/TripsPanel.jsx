@@ -36,6 +36,7 @@ export default function TripsPanel({ isOpen, onClose }) {
       <aside
         ref={panelRef}
         id="trips-panel"
+        data-testid="trips-panel"
         className={`trips-panel ${isOpen ? 'open' : ''}`}
         role="dialog"
         aria-labelledby="trips-panel-title"

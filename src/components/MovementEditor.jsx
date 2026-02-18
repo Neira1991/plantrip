@@ -40,7 +40,7 @@ export default function MovementEditor({ movement, fromStop, toStop, onSave, onD
       <div className="movement-connector">
         <div className="movement-line" />
         {!editing ? (
-          <button className="movement-add-btn" onClick={() => setEditing(true)}>
+          <button className="movement-add-btn" data-testid="btn-add-movement" onClick={() => setEditing(true)}>
             + transport
           </button>
         ) : (
@@ -50,6 +50,7 @@ export default function MovementEditor({ movement, fromStop, toStop, onSave, onD
                 <button
                   key={t.value}
                   className={`movement-type-btn ${type === t.value ? 'active' : ''}`}
+                  data-testid="movement-type-btn"
                   onClick={() => setType(t.value)}
                   title={t.label}
                 >
@@ -74,8 +75,8 @@ export default function MovementEditor({ movement, fromStop, toStop, onSave, onD
               min="1"
             />
             <div className="movement-edit-actions">
-              <button className="movement-cancel-btn" onClick={() => setEditing(false)}>Cancel</button>
-              <button className="movement-save-btn" onClick={handleSave}>Save</button>
+              <button className="movement-cancel-btn" data-testid="btn-cancel-movement" onClick={() => setEditing(false)}>Cancel</button>
+              <button className="movement-save-btn" data-testid="btn-save-movement" onClick={handleSave}>Save</button>
             </div>
           </div>
         )}
@@ -94,6 +95,7 @@ export default function MovementEditor({ movement, fromStop, toStop, onSave, onD
               <button
                 key={t.value}
                 className={`movement-type-btn ${type === t.value ? 'active' : ''}`}
+                data-testid="movement-type-btn"
                 onClick={() => setType(t.value)}
                 title={t.label}
               >
@@ -118,9 +120,9 @@ export default function MovementEditor({ movement, fromStop, toStop, onSave, onD
             min="1"
           />
           <div className="movement-edit-actions">
-            <button className="movement-cancel-btn" onClick={() => setEditing(false)}>Cancel</button>
-            <button className="movement-delete-btn" onClick={() => { onDelete(movement.id); setEditing(false) }}>Delete</button>
-            <button className="movement-save-btn" onClick={handleSave}>Save</button>
+            <button className="movement-cancel-btn" data-testid="btn-cancel-movement" onClick={() => setEditing(false)}>Cancel</button>
+            <button className="movement-delete-btn" data-testid="btn-delete-movement" onClick={() => { onDelete(movement.id); setEditing(false) }}>Delete</button>
+            <button className="movement-save-btn" data-testid="btn-save-movement" onClick={handleSave}>Save</button>
           </div>
         </div>
         <div className="movement-line" />
@@ -131,7 +133,7 @@ export default function MovementEditor({ movement, fromStop, toStop, onSave, onD
   return (
     <div className="movement-connector">
       <div className="movement-line" />
-      <button className="movement-summary" onClick={() => {
+      <button className="movement-summary" data-testid="movement-summary" onClick={() => {
         setType(movement.type)
         setCarrier(movement.carrier || '')
         setDurationMinutes(movement.durationMinutes || '')
