@@ -19,26 +19,40 @@ export default function ActivitySearchBox({ stopLng, stopLat, countryCode, date,
       return
     }
 
-    const params = new URLSearchParams({
+    const baseParams = {
       q,
       access_token: MAPBOX_TOKEN,
       session_token: sessionToken.current,
       limit: '5',
       types: 'poi,address',
       language: 'en',
-    })
-    if (stopLng != null && stopLat != null) {
-      params.set('proximity', `${stopLng},${stopLat}`)
     }
-    if (countryCode) {
-      params.set('country', countryCode)
+
+    const buildParams = (withCountry) => {
+      const params = new URLSearchParams(baseParams)
+      if (stopLng != null && stopLat != null) {
+        params.set('proximity', `${stopLng},${stopLat}`)
+      }
+      if (withCountry && countryCode) {
+        params.set('country', countryCode)
+      }
+      return params
     }
 
     try {
-      const res = await fetch(
-        `https://api.mapbox.com/search/searchbox/v1/suggest?${params}`
+      let res = await fetch(
+        `https://api.mapbox.com/search/searchbox/v1/suggest?${buildParams(true)}`
       )
-      const data = await res.json()
+      let data = await res.json()
+
+      // Retry without country filter if no results (e.g. China has limited Mapbox coverage)
+      if ((data.suggestions || []).length === 0 && countryCode) {
+        res = await fetch(
+          `https://api.mapbox.com/search/searchbox/v1/suggest?${buildParams(false)}`
+        )
+        data = await res.json()
+      }
+
       const items = (data.suggestions || []).map(s => ({
         mapbox_id: s.mapbox_id,
         name: s.name,
