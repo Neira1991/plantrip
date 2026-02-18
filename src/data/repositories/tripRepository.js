@@ -1,33 +1,22 @@
-import { localStorageAdapter } from '../adapters/localStorageAdapter'
+import { apiAdapter } from '../adapters/apiAdapter'
 import { validateTrip } from '../schemas/tripSchema'
-import { tripStopRepository } from './tripStopRepository'
-import { movementRepository } from './movementRepository'
-import { activityRepository } from './activityRepository'
 import { countries } from '../static/countries'
-
-const STORAGE_KEY = 'plantrip_trips'
 
 export const tripRepository = {
   async getAll() {
-    const trips = await localStorageAdapter.getAll(STORAGE_KEY)
-    return trips.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    return apiAdapter.get('/trips')
   },
 
   async getById(id) {
-    return localStorageAdapter.getById(STORAGE_KEY, id)
+    return apiAdapter.get(`/trips/${id}`)
   },
 
   async findByCountry(countryCode) {
-    const trips = await localStorageAdapter.getAll(STORAGE_KEY)
+    const trips = await apiAdapter.get('/trips')
     return trips.find(t => t.countryCode === countryCode) || null
   },
 
   async create(data) {
-    const existing = await this.findByCountry(data.countryCode)
-    if (existing) {
-      throw new Error('A trip for this country already exists')
-    }
-
     const country = countries.find(c => c.code === data.countryCode)
     const tripData = {
       name: data.name || `${country?.name || ''} Trip`,
@@ -43,21 +32,14 @@ export const tripRepository = {
       throw new Error(validation.errors[0])
     }
 
-    return localStorageAdapter.create(STORAGE_KEY, tripData)
+    return apiAdapter.post('/trips', tripData)
   },
 
   async update(id, updates) {
-    return localStorageAdapter.update(STORAGE_KEY, id, updates)
+    return apiAdapter.put(`/trips/${id}`, updates)
   },
 
   async delete(id) {
-    // Cascade: delete all stops (which cascades to activities + movements)
-    const stops = await tripStopRepository.getByTripId(id)
-    for (const stop of stops) {
-      await activityRepository.deleteByStopId(stop.id)
-    }
-    await movementRepository.deleteByTripId(id)
-    await tripStopRepository.deleteByTripId(id)
-    return localStorageAdapter.delete(STORAGE_KEY, id)
+    await apiAdapter.del(`/trips/${id}`)
   },
 }
