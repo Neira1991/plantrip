@@ -33,6 +33,7 @@ class TripCreate(BaseModel):
     start_date: DateType
     status: str = "planning"
     notes: str = ""
+    currency: str = "EUR"
 
 
 class TripUpdate(BaseModel):
@@ -41,6 +42,7 @@ class TripUpdate(BaseModel):
     start_date: DateType | None = None
     status: str | None = None
     notes: str | None = None
+    currency: str | None = None
 
 
 class TripResponse(BaseModel):
@@ -51,6 +53,7 @@ class TripResponse(BaseModel):
     end_date: DateType | None
     status: str
     notes: str
+    currency: str = "EUR"
     created_at: datetime
     updated_at: datetime
 
@@ -65,6 +68,7 @@ class TripStopCreate(BaseModel):
     lat: float
     notes: str = ""
     nights: int = 1
+    price_per_night: float | None = None
 
     @field_validator("nights")
     @classmethod
@@ -80,6 +84,7 @@ class TripStopUpdate(BaseModel):
     lat: float | None = None
     notes: str | None = None
     nights: int | None = None
+    price_per_night: float | None = None
 
     @field_validator("nights")
     @classmethod
@@ -98,6 +103,7 @@ class TripStopResponse(BaseModel):
     lat: float
     notes: str
     nights: int
+    price_per_night: float | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -121,6 +127,7 @@ class MovementCreate(BaseModel):
     carrier: str = ""
     booking_ref: str = ""
     notes: str = ""
+    price: float | None = None
 
 
 class MovementUpdate(BaseModel):
@@ -131,6 +138,7 @@ class MovementUpdate(BaseModel):
     carrier: str | None = None
     booking_ref: str | None = None
     notes: str | None = None
+    price: float | None = None
 
 
 class MovementResponse(BaseModel):
@@ -145,6 +153,7 @@ class MovementResponse(BaseModel):
     carrier: str
     booking_ref: str
     notes: str
+    price: float | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -164,7 +173,7 @@ class ActivityCreate(BaseModel):
     notes: str = ""
     category: str = ""
     opening_hours: str = ""
-    price_info: str = ""
+    price: float | None = None
     tips: str = ""
     website_url: str = ""
     phone: str = ""
@@ -185,7 +194,7 @@ class ActivityUpdate(BaseModel):
     notes: str | None = None
     category: str | None = None
     opening_hours: str | None = None
-    price_info: str | None = None
+    price: float | None = None
     tips: str | None = None
     website_url: str | None = None
     phone: str | None = None
@@ -224,7 +233,7 @@ class ActivityResponse(BaseModel):
     notes: str
     category: str = ""
     opening_hours: str = ""
-    price_info: str = ""
+    price: float | None = None
     tips: str = ""
     website_url: str = ""
     phone: str = ""
@@ -243,6 +252,15 @@ class ActivityResponse(BaseModel):
 ActivityDetailResponse = ActivityResponse
 
 
+# --- Budget ---
+
+class BudgetSummary(BaseModel):
+    activities_total: float = 0.0
+    accommodation_total: float = 0.0
+    transport_total: float = 0.0
+    grand_total: float = 0.0
+
+
 # --- Itinerary ---
 
 class ItineraryStopResponse(BaseModel):
@@ -256,6 +274,7 @@ class ItineraryStopResponse(BaseModel):
 class ItineraryResponse(BaseModel):
     trip: TripResponse
     stops: list[ItineraryStopResponse]
+    budget: BudgetSummary = BudgetSummary()
 
     model_config = {"from_attributes": True}
 
@@ -276,7 +295,9 @@ class SharedTripResponse(BaseModel):
     start_date: DateType | None
     end_date: DateType | None
     status: str
+    currency: str = "EUR"
     stops: list[ItineraryStopResponse]
+    budget: BudgetSummary = BudgetSummary()
     expires_at: datetime
 
     model_config = {"from_attributes": True}

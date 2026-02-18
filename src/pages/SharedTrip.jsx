@@ -4,6 +4,7 @@ import MapboxMap from '../components/MapboxMap'
 import SharedDaySection from '../components/SharedDaySection'
 import { apiAdapter } from '../data/adapters/apiAdapter'
 import { countries } from '../data/static/countries'
+import { formatPrice } from '../utils/currency'
 import './SharedTrip.css'
 
 function buildTimeline(data) {
@@ -50,6 +51,7 @@ function buildTimeline(data) {
         stopLat: stop.lat,
         stopSortIndex: stop.sortIndex,
         nights: stop.nights,
+        pricePerNight: stop.pricePerNight,
         totalStops: sorted.length,
         isFirstDayOfStop: isFirst,
         isLastDayOfStop: isLast,
@@ -230,8 +232,37 @@ export default function SharedTrip() {
                   <SharedDaySection
                     key={`${day.stopId}-${day.dayNumber}`}
                     day={day}
+                    currency={data.currency}
                   />
                 ))}
+              </div>
+            )}
+
+            {data.budget && data.budget.grandTotal > 0 && (
+              <div className="shared-budget-summary">
+                <h3 className="shared-budget-title">Budget</h3>
+                {data.budget.activitiesTotal > 0 && (
+                  <div className="shared-budget-row">
+                    <span>Activities</span>
+                    <span>{formatPrice(data.budget.activitiesTotal, data.currency)}</span>
+                  </div>
+                )}
+                {data.budget.accommodationTotal > 0 && (
+                  <div className="shared-budget-row">
+                    <span>Accommodation</span>
+                    <span>{formatPrice(data.budget.accommodationTotal, data.currency)}</span>
+                  </div>
+                )}
+                {data.budget.transportTotal > 0 && (
+                  <div className="shared-budget-row">
+                    <span>Transport</span>
+                    <span>{formatPrice(data.budget.transportTotal, data.currency)}</span>
+                  </div>
+                )}
+                <div className="shared-budget-row shared-budget-total">
+                  <span>Total</span>
+                  <span>{formatPrice(data.budget.grandTotal, data.currency)}</span>
+                </div>
               </div>
             )}
           </div>

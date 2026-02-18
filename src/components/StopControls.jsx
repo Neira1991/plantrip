@@ -1,15 +1,24 @@
 import { useState } from 'react'
+import { formatPrice } from '../utils/currency'
 import './StopControls.css'
 
-export default function StopControls({ stop, onMoveUp, onMoveDown, onRemove, onUpdateNights, isFirst, isLast }) {
+export default function StopControls({ stop, onMoveUp, onMoveDown, onRemove, onUpdateNights, onUpdatePrice, isFirst, isLast, currency }) {
   const [editingNights, setEditingNights] = useState(false)
   const [nightsValue, setNightsValue] = useState(stop.nights || 1)
+  const [editingPrice, setEditingPrice] = useState(false)
+  const [priceValue, setPriceValue] = useState(stop.pricePerNight ?? '')
   const [confirming, setConfirming] = useState(false)
 
   const handleNightsSave = () => {
     const n = Math.max(1, parseInt(nightsValue) || 1)
     onUpdateNights(stop.id, n)
     setEditingNights(false)
+  }
+
+  const handlePriceSave = () => {
+    const val = priceValue === '' ? null : parseFloat(priceValue)
+    if (onUpdatePrice) onUpdatePrice(stop.id, val != null && !isNaN(val) ? val : null)
+    setEditingPrice(false)
   }
 
   return (
@@ -37,6 +46,35 @@ export default function StopControls({ stop, onMoveUp, onMoveDown, onRemove, onU
             data-testid="nights-badge"
           >
             {stop.nights || 1} {(stop.nights || 1) === 1 ? 'night' : 'nights'}
+          </button>
+        )}
+
+        {editingPrice ? (
+          <span className="price-edit-group">
+            <input
+              type="number"
+              className="price-input"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={priceValue}
+              onChange={e => setPriceValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handlePriceSave(); if (e.key === 'Escape') setEditingPrice(false) }}
+              onBlur={handlePriceSave}
+              autoFocus
+              data-testid="price-input"
+            />
+            <span className="price-label">/night</span>
+          </span>
+        ) : (
+          <button
+            className="price-badge"
+            onClick={() => { setPriceValue(stop.pricePerNight ?? ''); setEditingPrice(true) }}
+            data-testid="price-badge"
+          >
+            {stop.pricePerNight != null
+              ? `${formatPrice(stop.pricePerNight, currency)}/night`
+              : '+ price'}
           </button>
         )}
       </div>

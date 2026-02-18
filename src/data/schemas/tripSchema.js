@@ -21,5 +21,9 @@ export function validateTrip(data) {
     errors.push('Notes must be 10,000 characters or less')
   }
 
+  if (data.currency && !/^[A-Z]{3}$/.test(data.currency)) {
+    errors.push('Currency must be a 3-letter ISO code')
+  }
+
   return { valid: errors.length === 0, errors }
 }

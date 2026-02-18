@@ -24,6 +24,7 @@ export const tripRepository = {
       start_date: data.startDate || null,
       status: data.status || 'planning',
       notes: data.notes || '',
+      currency: data.currency || 'EUR',
     }
 
     const validation = validateTrip(tripData)

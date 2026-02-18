@@ -1,10 +1,12 @@
 import DaySection from './DaySection'
+import { formatPrice } from '../utils/currency'
 import './ItineraryPanel.css'
 
 export default function ItineraryPanel({
   timeline,
   tripId,
-  countryCode,
+  currency,
+  budget,
   onClose,
   onAddStop,
   onReorderStop,
@@ -17,7 +19,7 @@ export default function ItineraryPanel({
   onUpdateMovement,
   onOpenCitySearch,
   onUpdateNights,
-  onExploreStop,
+  onUpdateStopPrice,
   toast,
 }) {
   const handleMoveUp = async (sortIndex) => {
@@ -77,7 +79,7 @@ export default function ItineraryPanel({
                 key={`${day.stopId}-${day.dayNumber}`}
                 day={day}
                 tripId={tripId}
-                countryCode={countryCode}
+                currency={currency}
                 onAddActivity={onAddActivity}
                 onUpdateActivity={onUpdateActivity}
                 onRemoveActivity={onRemoveActivity}
@@ -85,15 +87,43 @@ export default function ItineraryPanel({
                 onMoveDown={handleMoveDown}
                 onRemoveStop={handleRemoveStop}
                 onUpdateNights={onUpdateNights}
+                onUpdateStopPrice={onUpdateStopPrice}
                 onAddMovement={handleAddMovement}
                 onUpdateMovement={onUpdateMovement}
                 onRemoveMovement={onDeleteMovement}
-                onExploreStop={onExploreStop}
               />
             ))}
           </div>
         )}
       </div>
+
+      {budget && budget.grandTotal > 0 && (
+        <div className="budget-summary" data-testid="budget-summary">
+          <h3 className="budget-title">Budget</h3>
+          {budget.activitiesTotal > 0 && (
+            <div className="budget-row">
+              <span>Activities</span>
+              <span>{formatPrice(budget.activitiesTotal, currency)}</span>
+            </div>
+          )}
+          {budget.accommodationTotal > 0 && (
+            <div className="budget-row">
+              <span>Accommodation</span>
+              <span>{formatPrice(budget.accommodationTotal, currency)}</span>
+            </div>
+          )}
+          {budget.transportTotal > 0 && (
+            <div className="budget-row">
+              <span>Transport</span>
+              <span>{formatPrice(budget.transportTotal, currency)}</span>
+            </div>
+          )}
+          <div className="budget-row budget-total">
+            <span>Total</span>
+            <span>{formatPrice(budget.grandTotal, currency)}</span>
+          </div>
+        </div>
+      )}
 
       <div className="itinerary-panel-footer">
         <button className="itinerary-add-stop-btn" data-testid="btn-add-stop" onClick={onOpenCitySearch}>

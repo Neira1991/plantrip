@@ -75,24 +75,6 @@
   color: #555;
 }
 
-.btn-explore-stop {
-  margin: 0 16px 4px;
-  padding: 3px 10px;
-  border-radius: 10px;
-  border: 1px solid #2a2a3e;
-  background: none;
-  color: #ff8c42;
-  font-size: 0.7rem;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.btn-explore-stop:hover {
-  background: rgba(255, 140, 66, 0.1);
-  color: #ffaa66;
-}
-
 /* Movement connector */
 .movement-connector {
   display: flex;
@@ -157,6 +139,12 @@
 
 .movement-label {
   color: #999;
+}
+
+.movement-price {
+  color: #48c78e;
+  font-size: 0.7rem;
+  margin-left: auto;
 }
 
 .movement-form {

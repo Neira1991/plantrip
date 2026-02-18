@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import MapboxMap from '../components/MapboxMap'
 import CityAutocomplete from '../components/CityAutocomplete'
 import ItineraryPanel from '../components/ItineraryPanel'
-import PlaceFilter from '../components/PlaceFilter'
 import DeleteConfirm from '../components/TripsPanel/DeleteConfirm'
 import { useTrips } from '../hooks/useTrips'
 import { useItinerary } from '../hooks/useItinerary'
 import { apiAdapter } from '../data/adapters/apiAdapter'
 import { countries } from '../data/static/countries'
+import { CURRENCY_OPTIONS } from '../utils/currency'
 import './TripDetail.css'
 
 function formatDateShort(dateStr) {
@@ -41,6 +41,7 @@ export default function TripDetail() {
   const {
     itinerary,
     timeline,
+    budget,
     stops,
     movements,
     activities,
@@ -62,6 +63,7 @@ export default function TripDetail() {
   const [endDate, setEndDate] = useState('')
   const [status, setStatus] = useState('planning')
   const [notes, setNotes] = useState('')
+  const [currency, setCurrency] = useState('EUR')
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
@@ -70,11 +72,6 @@ export default function TripDetail() {
   const [toast, setToast] = useState(null)
   const [sharePopup, setSharePopup] = useState(null)
   const [shareLoading, setShareLoading] = useState(false)
-  const [exploreStop, setExploreStop] = useState(null) // { id, name, lat, lng }
-  const [exploreResults, setExploreResults] = useState([])
-  const [exploreKinds, setExploreKinds] = useState([])
-  const [exploreLoading, setExploreLoading] = useState(false)
-
   useEffect(() => {
     if (trip) {
       setName(trip.name || '')
@@ -82,12 +79,14 @@ export default function TripDetail() {
       setEndDate(trip.endDate || '')
       setStatus(trip.status || 'planning')
       setNotes(trip.notes || '')
+      setCurrency(trip.currency || 'EUR')
     } else if (isNew && country) {
       setName(`${country.name} Trip`)
       setStartDate('')
       setEndDate('')
       setStatus('planning')
       setNotes('')
+      setCurrency('EUR')
     }
   }, [trip, isNew, country])
 
@@ -136,6 +135,7 @@ export default function TripDetail() {
         startDate: startDate || null,
         status,
         notes: notes.trim(),
+        currency,
       }
       if (isNew) {
         const created = await createTrip(data)
@@ -160,6 +160,7 @@ export default function TripDetail() {
       setEndDate(trip.endDate || '')
       setStatus(trip.status || 'planning')
       setNotes(trip.notes || '')
+      setCurrency(trip.currency || 'EUR')
       setErrors({})
       setShowDelete(false)
       setMode('view')
@@ -185,6 +186,10 @@ export default function TripDetail() {
     await loadTrips() // Refresh trip to get updated end_date
   }
 
+  async function handleUpdateStopPrice(stopId, pricePerNight) {
+    await updateStop(stopId, { pricePerNight })
+  }
+
   async function handleRemoveStop(tripId, stopId) {
     await removeStop(tripId, stopId)
     await loadTrips() // Refresh trip to get updated end_date
@@ -200,77 +205,6 @@ export default function TripDetail() {
   function showToast(message) {
     setToast(message)
     setTimeout(() => setToast(null), 3000)
-  }
-
-  const fetchExplorePlaces = useCallback(async (stop, kinds) => {
-    setExploreLoading(true)
-    try {
-      const params = new URLSearchParams({
-        lat: String(stop.lat),
-        lon: String(stop.lng),
-        radius: '10000',
-        rate: '1',
-        limit: '50',
-      })
-      if (kinds.length > 0) {
-        params.set('kinds', kinds.join(','))
-      }
-      const data = await apiAdapter.get(`/places/radius?${params}`)
-      setExploreResults(Array.isArray(data) ? data.filter(p => p.name) : [])
-    } catch {
-      setExploreResults([])
-    } finally {
-      setExploreLoading(false)
-    }
-  }, [])
-
-  async function handleExploreStop(stop) {
-    const stopData = { id: stop.id, name: stop.name, lat: stop.lat, lng: stop.lng }
-    setExploreStop(stopData)
-    setExploreKinds([])
-    await fetchExplorePlaces(stopData, [])
-  }
-
-  function handleExploreKindsChange(newKinds) {
-    setExploreKinds(newKinds)
-    if (exploreStop) {
-      fetchExplorePlaces(exploreStop, newKinds)
-    }
-  }
-
-  function handleCloseExplore() {
-    setExploreStop(null)
-    setExploreResults([])
-    setExploreKinds([])
-  }
-
-  async function handlePoiClick(poi) {
-    if (!exploreStop) return
-    let title = poi.name
-    let lng = poi.point?.lon ?? null
-    let lat = poi.point?.lat ?? null
-    let address = ''
-    let activityNotes = ''
-
-    try {
-      const detail = await apiAdapter.get(`/places/${poi.xid}`)
-      if (detail.point) {
-        lng = detail.point.lon ?? lng
-        lat = detail.point.lat ?? lat
-      }
-      if (detail.address) {
-        const parts = [detail.address.road, detail.address.city, detail.address.country].filter(Boolean)
-        address = parts.join(', ')
-      }
-      if (detail.wikipediaExtracts?.text) {
-        activityNotes = detail.wikipediaExtracts.text.slice(0, 300)
-      }
-    } catch {
-      // Use basic POI data
-    }
-
-    await addActivity(exploreStop.id, { title, lng, lat, address, notes: activityNotes })
-    showToast(`Added "${title}" to ${exploreStop.name}`)
   }
 
   async function handleShare() {
@@ -368,8 +302,6 @@ export default function TripDetail() {
             stops={stops}
             movements={movements}
             activities={activities.filter(a => a.lng != null && a.lat != null)}
-            poiMarkers={exploreStop ? exploreResults : []}
-            onPoiClick={handlePoiClick}
           />
         </div>
 
@@ -377,7 +309,8 @@ export default function TripDetail() {
           <ItineraryPanel
             timeline={timeline}
             tripId={tripId}
-            countryCode={country?.code}
+            currency={trip?.currency || currency}
+            budget={budget}
             onClose={() => setShowItinerary(false)}
             onReorderStop={handleReorderStop}
             onRemoveStop={handleRemoveStop}
@@ -388,47 +321,10 @@ export default function TripDetail() {
             onUpdateMovement={updateMovement}
             onDeleteMovement={removeMovement}
             onUpdateNights={handleUpdateStopNights}
+            onUpdateStopPrice={handleUpdateStopPrice}
             onOpenCitySearch={() => { setShowItinerary(false); setShowCitySearch(true) }}
-            onExploreStop={handleExploreStop}
             toast={toast}
           />
-        )}
-
-        {exploreStop && (
-          <div className="explore-panel" data-testid="explore-panel">
-            <div className="explore-panel-header">
-              <h3 className="explore-panel-title">
-                Explore {exploreStop.name}
-                {exploreLoading && <span className="explore-loading">...</span>}
-              </h3>
-              <button className="itinerary-close-btn" onClick={handleCloseExplore}>&#10005;</button>
-            </div>
-            <PlaceFilter selected={exploreKinds} onChange={handleExploreKindsChange} />
-            <div className="explore-panel-body">
-              {exploreResults.length === 0 && !exploreLoading && (
-                <p className="explore-empty">No places found nearby</p>
-              )}
-              {exploreResults.length > 0 && (
-                <p className="explore-count">{exploreResults.length} places found</p>
-              )}
-              <div className="explore-list">
-                {exploreResults.map(poi => (
-                  <button
-                    key={poi.xid}
-                    className="explore-item"
-                    onClick={() => handlePoiClick(poi)}
-                  >
-                    <span className="explore-item-name">{poi.name}</span>
-                    {poi.kinds && (
-                      <span className="explore-item-kind">
-                        {poi.kinds.split(',')[0].replace(/_/g, ' ')}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
         )}
       </div>
 
@@ -464,6 +360,21 @@ export default function TripDetail() {
                 <option value="booked">Booked</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div className="form-field">
+              <label className="form-label" htmlFor="trip-currency">Currency</label>
+              <select
+                id="trip-currency"
+                className="form-input"
+                data-testid="trip-currency-select"
+                value={currency}
+                onChange={e => setCurrency(e.target.value)}
+              >
+                {CURRENCY_OPTIONS.map(c => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
               </select>
             </div>
 

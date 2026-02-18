@@ -70,6 +70,7 @@ async def upsert_movement(
         existing.carrier = data.carrier
         existing.booking_ref = data.booking_ref
         existing.notes = data.notes
+        existing.price = data.price
         existing.updated_at = datetime.utcnow()
         await db.commit()
         await db.refresh(existing)
@@ -87,6 +88,7 @@ async def upsert_movement(
         carrier=data.carrier,
         booking_ref=data.booking_ref,
         notes=data.notes,
+        price=data.price,
     )
     db.add(movement)
     await db.commit()

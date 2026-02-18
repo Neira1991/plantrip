@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { formatPrice } from '../utils/currency'
 import './ActivityItem.css'
 
 function formatTime(timeStr) {
@@ -19,12 +20,13 @@ function formatDuration(minutes) {
   return m ? `${h}h${m}m` : `${h}h`
 }
 
-export default function ActivityItem({ activity, onUpdate, onRemove, onDelete, tripId }) {
+export default function ActivityItem({ activity, onUpdate, onRemove, onDelete, tripId, currency }) {
   const navigate = useNavigate()
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(activity.title)
   const [startTime, setStartTime] = useState(activity.startTime || '')
   const [durationMinutes, setDurationMinutes] = useState(activity.durationMinutes || '')
+  const [price, setPrice] = useState(activity.price ?? '')
 
   // Support both onRemove and onDelete for backwards compatibility
   const handleRemove = onRemove || onDelete
@@ -36,6 +38,7 @@ export default function ActivityItem({ activity, onUpdate, onRemove, onDelete, t
       title: trimmed,
       startTime: startTime || null,
       durationMinutes: durationMinutes ? parseInt(durationMinutes) : null,
+      price: price !== '' ? parseFloat(price) : null,
     })
     setEditing(false)
   }
@@ -44,6 +47,7 @@ export default function ActivityItem({ activity, onUpdate, onRemove, onDelete, t
     setTitle(activity.title)
     setStartTime(activity.startTime || '')
     setDurationMinutes(activity.durationMinutes || '')
+    setPrice(activity.price ?? '')
     setEditing(false)
   }
 
@@ -79,6 +83,16 @@ export default function ActivityItem({ activity, onUpdate, onRemove, onDelete, t
             onChange={e => setDurationMinutes(e.target.value)}
             data-testid="activity-duration-input"
           />
+          <input
+            type="number"
+            className="activity-price-input"
+            placeholder="Price"
+            min="0"
+            step="0.01"
+            value={price}
+            onChange={e => setPrice(e.target.value)}
+            data-testid="activity-price-input"
+          />
         </div>
         <div className="activity-edit-actions">
           <button onClick={handleSave} className="btn-save-activity" data-testid="btn-save-activity">Save</button>
@@ -95,15 +109,17 @@ export default function ActivityItem({ activity, onUpdate, onRemove, onDelete, t
           <span className="activity-time-badge" data-testid="activity-time-badge">{formatTime(activity.startTime)}</span>
         )}
         <span className="activity-title" data-testid="activity-title">{activity.title}</span>
-        {activity.lng != null && <span className="activity-location-badge" data-testid="activity-location-badge">📍</span>}
         {activity.durationMinutes && (
           <span className="activity-duration-badge" data-testid="activity-duration-badge">{formatDuration(activity.durationMinutes)}</span>
+        )}
+        {activity.price != null && (
+          <span className="activity-price-badge" data-testid="activity-price-badge">{formatPrice(activity.price, currency)}</span>
         )}
       </div>
       {tripId && (
         <button
           className="activity-detail-btn"
-          onClick={e => { e.stopPropagation(); navigate(`/trip/${tripId}/activity/${activity.id}`) }}
+          onClick={e => { e.stopPropagation(); navigate(`/trip/${tripId}/activity/${activity.id}`, { state: { currency } }) }}
           title="View details"
           data-testid="btn-activity-detail"
         >&rarr;</button>

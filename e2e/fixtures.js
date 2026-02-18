@@ -212,65 +212,6 @@ export const test = base.extend({
     await use(mockCities)
   },
 
-  /** Intercept Mapbox Search Box API (suggest + retrieve) with mock responses */
-  mockSearchBox: async ({ page }, use) => {
-    const suggestResponse = {
-      suggestions: [
-        {
-          mapbox_id: 'poi.eiffel',
-          name: 'Eiffel Tower',
-          full_address: 'Champ de Mars, 5 Avenue Anatole France, 75007 Paris, France',
-        },
-        {
-          mapbox_id: 'poi.louvre',
-          name: 'Louvre Museum',
-          full_address: 'Rue de Rivoli, 75001 Paris, France',
-        },
-      ],
-    }
-
-    const retrieveResponses = {
-      'poi.eiffel': {
-        type: 'FeatureCollection',
-        features: [{
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [2.2945, 48.8584] },
-          properties: { name: 'Eiffel Tower', full_address: 'Champ de Mars, 5 Avenue Anatole France, 75007 Paris, France' },
-        }],
-      },
-      'poi.louvre': {
-        type: 'FeatureCollection',
-        features: [{
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [2.3376, 48.8606] },
-          properties: { name: 'Louvre Museum', full_address: 'Rue de Rivoli, 75001 Paris, France' },
-        }],
-      },
-    }
-
-    await page.route('**/api.mapbox.com/search/searchbox/v1/suggest**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(suggestResponse),
-      })
-    })
-
-    await page.route('**/api.mapbox.com/search/searchbox/v1/retrieve/**', async (route) => {
-      const url = route.request().url()
-      // Extract mapbox_id from URL: .../retrieve/{mapbox_id}?...
-      const match = url.match(/\/retrieve\/([^?]+)/)
-      const id = match?.[1] || ''
-      const response = retrieveResponses[id] || { type: 'FeatureCollection', features: [] }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(response),
-      })
-    })
-
-    await use({ suggestResponse, retrieveResponses })
-  },
 })
 
 export { expect }

@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Activity, Movement, ShareToken, Trip, TripStop, User
+from app.routers.trips import compute_budget
 from app.schemas import (
     ItineraryStopResponse,
     ShareTokenResponse,
@@ -157,12 +158,15 @@ async def get_shared_trip(
             )
         )
 
+    budget = compute_budget(stops, all_activities, movements)
     return SharedTripResponse(
         trip_name=trip.name,
         country_code=trip.country_code,
         start_date=trip.start_date,
         end_date=trip.end_date,
         status=trip.status,
+        currency=trip.currency,
         stops=itinerary_stops,
+        budget=budget,
         expires_at=share_token.expires_at,
     )

@@ -31,6 +31,7 @@ class Trip(Base):
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="planning")
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -54,6 +55,7 @@ class TripStop(Base):
     lat: Mapped[float] = mapped_column(Float, nullable=False)
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     nights: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    price_per_night: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -85,6 +87,7 @@ class Movement(Base):
     carrier: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     booking_ref: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    price: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -112,7 +115,7 @@ class Activity(Base):
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     category: Mapped[str] = mapped_column(String(100), nullable=False, default="")
     opening_hours: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    price_info: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    price: Mapped[float | None] = mapped_column(Float, nullable=True)
     tips: Mapped[str] = mapped_column(Text, nullable=False, default="")
     website_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     phone: Mapped[str] = mapped_column(String(50), nullable=False, default="")

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import PhotoGallery from './PhotoGallery'
+import { formatPrice } from '../utils/currency'
 import './SharedDaySection.css'
 
 const TRANSPORT_TYPES = {
@@ -35,7 +36,7 @@ function formatDuration(mins) {
   return `${h}h${m}m`
 }
 
-export default function SharedDaySection({ day }) {
+export default function SharedDaySection({ day, currency }) {
   return (
     <div className="shared-day-section">
       <div className="shared-day-header">
@@ -47,7 +48,7 @@ export default function SharedDaySection({ day }) {
       {day.activities.length > 0 && (
         <div className="shared-day-activities">
           {day.activities.map(activity => (
-            <SharedActivityItem key={activity.id} activity={activity} />
+            <SharedActivityItem key={activity.id} activity={activity} currency={currency} />
           ))}
         </div>
       )}
@@ -64,6 +65,9 @@ export default function SharedDaySection({ day }) {
               {day.movementAfter.movement.carrier ? ` \u00B7 ${day.movementAfter.movement.carrier}` : ''}
               {day.movementAfter.movement.durationMinutes ? ` \u00B7 ${formatDuration(day.movementAfter.movement.durationMinutes)}` : ''}
             </span>
+            {day.movementAfter.movement.price != null && (
+              <span className="shared-movement-price">{formatPrice(day.movementAfter.movement.price, currency)}</span>
+            )}
           </div>
           <div className="shared-movement-line" />
         </div>
@@ -72,13 +76,13 @@ export default function SharedDaySection({ day }) {
   )
 }
 
-function SharedActivityItem({ activity }) {
+function SharedActivityItem({ activity, currency }) {
   const [expanded, setExpanded] = useState(false)
   const hasPhotos = activity.photos && activity.photos.length > 0
   const categoryLabel = activity.category
     ? activity.category.split(',')[0].replace(/_/g, ' ')
     : null
-  const hasEnrichedInfo = activity.openingHours || activity.priceInfo || categoryLabel || activity.rating != null
+  const hasEnrichedInfo = activity.openingHours || activity.price != null || categoryLabel || activity.rating != null
 
   return (
     <div className="shared-activity-item-wrap">
@@ -96,7 +100,6 @@ function SharedActivityItem({ activity }) {
             {'\u2605'.repeat(Math.floor(activity.rating))}
           </span>
         )}
-        {activity.lng != null && <span className="shared-activity-location">{'\u{1F4CD}'}</span>}
         {activity.durationMinutes && (
           <span className="shared-activity-duration">{formatDuration(activity.durationMinutes)}</span>
         )}
@@ -115,10 +118,10 @@ function SharedActivityItem({ activity }) {
               <span>{activity.openingHours}</span>
             </div>
           )}
-          {activity.priceInfo && (
+          {activity.price != null && (
             <div className="shared-activity-info-row">
               <span className="shared-info-icon">{'\u{1F4B0}'}</span>
-              <span>{activity.priceInfo}</span>
+              <span>{formatPrice(activity.price, currency)}</span>
             </div>
           )}
         </div>

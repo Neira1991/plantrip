@@ -11,6 +11,7 @@ from app.database import get_db
 from app.models import Activity, Movement, Trip, TripStop, User
 from app.routers.stops import recalculate_end_date
 from app.schemas import (
+    BudgetSummary,
     ItineraryResponse,
     ItineraryStopResponse,
     TripCreate,
@@ -19,6 +20,18 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/trips", tags=["trips"])
+
+
+def compute_budget(stops, activities, movements):
+    activities_total = sum(a.price or 0.0 for a in activities)
+    accommodation_total = sum((s.price_per_night or 0.0) * s.nights for s in stops)
+    transport_total = sum(m.price or 0.0 for m in movements)
+    return BudgetSummary(
+        activities_total=activities_total,
+        accommodation_total=accommodation_total,
+        transport_total=transport_total,
+        grand_total=activities_total + accommodation_total + transport_total,
+    )
 
 
 @router.get("", response_model=list[TripResponse])
@@ -53,6 +66,7 @@ async def create_trip(
         end_date=data.start_date,
         status=data.status,
         notes=data.notes,
+        currency=data.currency,
     )
     db.add(trip)
     await db.commit()
@@ -164,4 +178,5 @@ async def get_itinerary(
             )
         )
 
-    return ItineraryResponse(trip=trip, stops=itinerary_stops)
+    budget = compute_budget(stops, all_activities, movements)
+    return ItineraryResponse(trip=trip, stops=itinerary_stops, budget=budget)

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import MapboxMap from '../components/MapboxMap'
 import PhotoGallery from '../components/PhotoGallery'
 import { apiAdapter } from '../data/adapters/apiAdapter'
+import { formatPrice } from '../utils/currency'
 import './ActivityDetail.css'
 
 function formatRating(rating) {
@@ -18,6 +19,8 @@ function formatRating(rating) {
 export default function ActivityDetail() {
   const { tripId, activityId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const currency = location.state?.currency || 'EUR'
   const [activity, setActivity] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -69,8 +72,12 @@ export default function ActivityDetail() {
     if (saving) return
     setSaving(true)
     try {
+      let value = editValue
+      if (editingField === 'price') {
+        value = editValue !== '' ? parseFloat(editValue) : null
+      }
       const updated = await apiAdapter.put(`/activities/${activityId}`, {
-        [editingField]: editValue,
+        [editingField]: value,
       })
       setActivity(prev => ({ ...prev, ...updated }))
       setEditingField(null)
@@ -108,7 +115,7 @@ export default function ActivityDetail() {
 
   const infoFields = [
     { key: 'openingHours', label: 'Opening Hours', icon: '\u{1F552}' },
-    { key: 'priceInfo', label: 'Price', icon: '\u{1F4B0}' },
+    { key: 'price', label: 'Price', icon: '\u{1F4B0}', type: 'number' },
     { key: 'address', label: 'Address', icon: '\u{1F4CD}' },
     { key: 'phone', label: 'Phone', icon: '\u{1F4DE}' },
   ]
@@ -119,7 +126,7 @@ export default function ActivityDetail() {
     { key: 'transportInfo', label: 'Getting There', icon: '\u{1F68C}' },
   ]
 
-  function renderEditableField(field, label, icon, multiline = false) {
+  function renderEditableField(field, label, icon, multiline = false, fieldType = 'text') {
     const value = activity[field]
     const isEditing = editingField === field
 
@@ -139,11 +146,13 @@ export default function ActivityDetail() {
               />
             ) : (
               <input
-                type="text"
+                type={fieldType === 'number' ? 'number' : 'text'}
                 className="ad-field-input"
                 value={editValue}
                 onChange={e => setEditValue(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit() }}
+                min={fieldType === 'number' ? '0' : undefined}
+                step={fieldType === 'number' ? '0.01' : undefined}
                 autoFocus
               />
             )}
@@ -158,13 +167,17 @@ export default function ActivityDetail() {
       )
     }
 
+    const displayValue = field === 'price' && value != null
+      ? formatPrice(value, currency)
+      : value
+
     return (
-      <div className="ad-field" key={field} onClick={() => startEdit(field, value)}>
+      <div className="ad-field" key={field} onClick={() => startEdit(field, value ?? '')}>
         <span className="ad-field-icon">{icon}</span>
         <div className="ad-field-content">
           <label className="ad-field-label">{label}</label>
-          <span className={`ad-field-value ${!value ? 'empty' : ''}`}>
-            {value || 'Click to add...'}
+          <span className={`ad-field-value ${!displayValue ? 'empty' : ''}`}>
+            {displayValue || 'Click to add...'}
           </span>
         </div>
       </div>
@@ -212,7 +225,7 @@ export default function ActivityDetail() {
         <div className="ad-section">
           <h3 className="ad-section-title">Info</h3>
           <div className="ad-fields">
-            {infoFields.map(f => renderEditableField(f.key, f.label, f.icon))}
+            {infoFields.map(f => renderEditableField(f.key, f.label, f.icon, false, f.type))}
             {activity.websiteUrl && (
               <div className="ad-field">
                 <span className="ad-field-icon">{'\u{1F310}'}</span>

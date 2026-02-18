@@ -141,6 +141,36 @@
   font-size: 0.95rem;
 }
 
+/* -- Budget Summary -- */
+
+.shared-budget-summary {
+  padding: 16px 20px;
+  border-top: 1px solid #222;
+}
+
+.shared-budget-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #ccc;
+  margin: 0 0 8px 0;
+}
+
+.shared-budget-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #888;
+  padding: 3px 0;
+}
+
+.shared-budget-total {
+  border-top: 1px solid #222;
+  margin-top: 6px;
+  padding-top: 6px;
+  font-weight: 600;
+  color: #48c78e;
+}
+
 /* -- Loading -- */
 
 .shared-trip-loading {

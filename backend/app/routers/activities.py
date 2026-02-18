@@ -91,7 +91,7 @@ async def create_activity(
         notes=data.notes,
         category=data.category,
         opening_hours=data.opening_hours,
-        price_info=data.price_info,
+        price=data.price,
         tips=data.tips,
         website_url=data.website_url,
         phone=data.phone,

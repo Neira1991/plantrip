@@ -12,6 +12,7 @@ export const tripStopRepository = {
       lat: data.lat,
       nights: data.nights || 1,
       notes: data.notes || '',
+      pricePerNight: data.pricePerNight ?? null,
     })
   },
 

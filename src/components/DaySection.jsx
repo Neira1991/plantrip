@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import ActivityItem from './ActivityItem'
-import ActivitySearchBox from './ActivitySearchBox'
 import StopControls from './StopControls'
+import { formatPrice } from '../utils/currency'
 import './DaySection.css'
 
 const TRANSPORT_TYPES = [
@@ -28,11 +28,15 @@ function formatDuration(mins) {
   return `${h}h${m}m`
 }
 
-export default function DaySection({ day, tripId, countryCode, onAddActivity, onUpdateActivity, onRemoveActivity, onReorderActivity, onMoveUp, onMoveDown, onRemoveStop, onUpdateNights, onAddMovement, onUpdateMovement, onRemoveMovement, onExploreStop }) {
+export default function DaySection({ day, tripId, currency, onAddActivity, onUpdateActivity, onRemoveActivity, onReorderActivity, onMoveUp, onMoveDown, onRemoveStop, onUpdateNights, onUpdateStopPrice, onAddMovement, onUpdateMovement, onRemoveMovement }) {
   const [movementForm, setMovementForm] = useState(null)
+  const [newActivityTitle, setNewActivityTitle] = useState('')
 
-  const handleAddActivity = ({ title, date, lng, lat, address, notes }) => {
-    onAddActivity(day.stopId, { title, date: date || day.date, lng, lat, address, notes })
+  const handleAddActivity = () => {
+    const trimmed = newActivityTitle.trim()
+    if (!trimmed) return
+    onAddActivity(day.stopId, { title: trimmed, date: day.date })
+    setNewActivityTitle('')
   }
 
   const isFirstStop = day.stopSortIndex === 0
@@ -46,25 +50,17 @@ export default function DaySection({ day, tripId, countryCode, onAddActivity, on
         <span className="day-city">{day.stopName}</span>
       </div>
 
-      {day.isFirstDayOfStop && onExploreStop && (
-        <button
-          className="btn-explore-stop"
-          onClick={() => onExploreStop({ id: day.stopId, name: day.stopName, lat: day.stopLat, lng: day.stopLng })}
-          data-testid="btn-explore-stop"
-        >
-          Explore
-        </button>
-      )}
-
       {day.isFirstDayOfStop && (
         <StopControls
-          stop={{ id: day.stopId, nights: day.nights, sortIndex: day.stopSortIndex }}
+          stop={{ id: day.stopId, nights: day.nights, sortIndex: day.stopSortIndex, pricePerNight: day.pricePerNight }}
           onMoveUp={() => onMoveUp(day.stopSortIndex)}
           onMoveDown={() => onMoveDown(day.stopSortIndex)}
           onRemove={() => onRemoveStop(day.stopId)}
           onUpdateNights={onUpdateNights}
+          onUpdatePrice={onUpdateStopPrice}
           isFirst={isFirstStop}
           isLast={isLastStop}
+          currency={currency}
         />
       )}
 
@@ -74,18 +70,21 @@ export default function DaySection({ day, tripId, countryCode, onAddActivity, on
             key={activity.id}
             activity={activity}
             tripId={tripId}
+            currency={currency}
             onUpdate={(updates) => onUpdateActivity(activity.id, updates)}
             onRemove={() => onRemoveActivity(day.stopId, activity.id)}
           />
         ))}
         <div className="add-activity-row">
-          <ActivitySearchBox
-            stopLng={day.stopLng}
-            stopLat={day.stopLat}
-            countryCode={countryCode}
-            date={day.date}
-            onAdd={handleAddActivity}
-            testId="add-activity-input"
+          <input
+            type="text"
+            className="add-activity-input"
+            placeholder="Add activity..."
+            value={newActivityTitle}
+            onChange={e => setNewActivityTitle(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleAddActivity() }}
+            maxLength={200}
+            data-testid="add-activity-input"
           />
         </div>
       </div>
@@ -96,6 +95,7 @@ export default function DaySection({ day, tripId, countryCode, onAddActivity, on
           {day.movementAfter.movement ? (
             <MovementSummary
               movement={day.movementAfter.movement}
+              currency={currency}
               onRemove={() => onRemoveMovement(day.movementAfter.movement.id)}
               onEdit={(data) => onUpdateMovement(day.movementAfter.movement.id, data)}
             />
@@ -123,7 +123,7 @@ export default function DaySection({ day, tripId, countryCode, onAddActivity, on
   )
 }
 
-function MovementSummary({ movement, onRemove, onEdit }) {
+function MovementSummary({ movement, currency, onRemove, onEdit }) {
   const [editing, setEditing] = useState(false)
   const transportConfig = TRANSPORT_TYPES.find(t => t.value === movement.type)
 
@@ -139,6 +139,8 @@ function MovementSummary({ movement, onRemove, onEdit }) {
     )
   }
 
+  const priceStr = movement.price != null ? formatPrice(movement.price, currency) : null
+
   return (
     <button className="movement-summary" data-testid="movement-summary" onClick={() => setEditing(true)}>
       <span className="movement-icon">{transportConfig?.icon || '📍'}</span>
@@ -147,6 +149,7 @@ function MovementSummary({ movement, onRemove, onEdit }) {
         {movement.carrier ? ` · ${movement.carrier}` : ''}
         {movement.durationMinutes ? ` · ${formatDuration(movement.durationMinutes)}` : ''}
       </span>
+      {priceStr && <span className="movement-price">{priceStr}</span>}
     </button>
   )
 }
@@ -155,6 +158,7 @@ function MovementForm({ fromStopId, initialData, onSave, onCancel, onDelete }) {
   const [type, setType] = useState(initialData?.type || 'train')
   const [carrier, setCarrier] = useState(initialData?.carrier || '')
   const [duration, setDuration] = useState(initialData?.durationMinutes || '')
+  const [price, setPrice] = useState(initialData?.price ?? '')
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -163,6 +167,7 @@ function MovementForm({ fromStopId, initialData, onSave, onCancel, onDelete }) {
       type,
       carrier: carrier.trim(),
       durationMinutes: duration ? parseInt(duration) : null,
+      price: price !== '' ? parseFloat(price) : null,
     })
   }
 
@@ -198,6 +203,16 @@ function MovementForm({ fromStopId, initialData, onSave, onCancel, onDelete }) {
         value={duration}
         onChange={e => setDuration(e.target.value)}
         data-testid="movement-duration-input"
+      />
+      <input
+        type="number"
+        className="movement-input"
+        placeholder="Price"
+        min="0"
+        step="0.01"
+        value={price}
+        onChange={e => setPrice(e.target.value)}
+        data-testid="movement-price-input"
       />
       <div className="movement-actions">
         <button type="button" className="btn-cancel" onClick={onCancel}>Cancel</button>

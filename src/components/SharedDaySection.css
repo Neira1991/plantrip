@@ -73,11 +73,6 @@
   white-space: nowrap;
 }
 
-.shared-activity-location {
-  font-size: 0.7rem;
-  flex-shrink: 0;
-}
-
 .shared-activity-duration {
   font-size: 0.7rem;
   color: #555;
@@ -170,6 +165,12 @@
 
 .shared-movement-label {
   color: #999;
+}
+
+.shared-movement-price {
+  color: #48c78e;
+  font-size: 0.7rem;
+  margin-left: auto;
 }
 
 @media (max-width: 480px) {

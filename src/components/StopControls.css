@@ -12,6 +12,10 @@
 
 .nights-editor {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .nights-badge {
@@ -50,6 +54,46 @@
 }
 
 .nights-label {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.price-badge {
+  background: rgba(72, 199, 142, 0.12);
+  border: 1px solid rgba(72, 199, 142, 0.25);
+  color: #48c78e;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.price-badge:hover {
+  background: rgba(72, 199, 142, 0.18);
+  border-color: rgba(72, 199, 142, 0.4);
+}
+
+.price-edit-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.price-input {
+  width: 70px;
+  background: #1a1a1a;
+  border: 1px solid #48c78e;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  font-family: inherit;
+  outline: none;
+}
+
+.price-label {
   font-size: 0.75rem;
   color: #888;
 }
@@ -106,7 +150,10 @@
 
   .nights-badge,
   .nights-input,
-  .nights-label {
+  .nights-label,
+  .price-badge,
+  .price-input,
+  .price-label {
     font-size: 0.8rem;
   }
 

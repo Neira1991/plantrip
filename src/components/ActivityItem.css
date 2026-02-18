@@ -52,9 +52,29 @@
   flex-shrink: 0;
 }
 
-.activity-location-badge {
+.activity-price-badge {
   font-size: 0.7rem;
+  color: #48c78e;
+  background: rgba(72, 199, 142, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
   flex-shrink: 0;
+}
+
+.activity-price-input {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  font-family: inherit;
+  outline: none;
+  flex: 0 0 80px;
+}
+
+.activity-price-input:focus {
+  border-color: #48c78e;
 }
 
 .activity-detail-btn {
@@ -188,8 +208,14 @@
   }
 
   .activity-time-badge,
-  .activity-duration-badge {
+  .activity-duration-badge,
+  .activity-price-badge {
     font-size: 0.75rem;
+  }
+
+  .activity-price-input {
+    font-size: 0.8rem;
+    padding: 8px 12px;
   }
 
   .activity-title {

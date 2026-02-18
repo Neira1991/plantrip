@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from app.database import create_tables
-from app.routers import activities, auth, movements, places, share, stops, trips
+from app.routers import activities, auth, movements, share, stops, trips
 
 _testing = os.environ.get("TESTING", "").lower() == "true"
 limiter = Limiter(
@@ -41,7 +41,6 @@ app.include_router(trips.router, prefix="/api")
 app.include_router(stops.router, prefix="/api")
 app.include_router(movements.router, prefix="/api")
 app.include_router(activities.router, prefix="/api")
-app.include_router(places.router, prefix="/api")
 app.include_router(share.router, prefix="/api")
 
 if os.environ.get("TESTING", "").lower() == "true":

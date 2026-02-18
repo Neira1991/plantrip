@@ -82,6 +82,7 @@ async def create_stop(
         lat=data.lat,
         notes=data.notes,
         nights=data.nights,
+        price_per_night=data.price_per_night,
     )
     db.add(stop)
     await db.flush()

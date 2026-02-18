@@ -46,6 +46,18 @@ export function useItinerary(tripId, tripStartDate) {
       }))
   }, [stops, movements, activities])
 
+  const budget = useMemo(() => {
+    const activitiesTotal = activities.reduce((sum, a) => sum + (a.price || 0), 0)
+    const accommodationTotal = stops.reduce((sum, s) => sum + (s.pricePerNight || 0) * (s.nights || 1), 0)
+    const transportTotal = movements.reduce((sum, m) => sum + (m.price || 0), 0)
+    return {
+      activitiesTotal,
+      accommodationTotal,
+      transportTotal,
+      grandTotal: activitiesTotal + accommodationTotal + transportTotal,
+    }
+  }, [stops, movements, activities])
+
   const timeline = useMemo(() => {
     if (!tripStartDate || stops.length === 0) return []
     const sorted = stops.toSorted((a, b) => a.sortIndex - b.sortIndex)
@@ -78,6 +90,7 @@ export function useItinerary(tripId, tripStartDate) {
           stopId: stop.id, stopName: stop.name,
           stopLng: stop.lng, stopLat: stop.lat,
           stopSortIndex: stop.sortIndex, nights: stop.nights,
+          pricePerNight: stop.pricePerNight,
           totalStops: sorted.length,
           isFirstDayOfStop: isFirst, isLastDayOfStop: isLast,
           activities: [
@@ -100,6 +113,7 @@ export function useItinerary(tripId, tripStartDate) {
     activities,
     itinerary,
     timeline,
+    budget,
     isLoading,
     addStop,
     updateStop,

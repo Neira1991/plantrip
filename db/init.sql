@@ -28,6 +28,7 @@ CREATE TABLE trips (
   status        VARCHAR(20)   NOT NULL DEFAULT 'planning',
   notes         TEXT          DEFAULT '',
   created_at    TIMESTAMPTZ   DEFAULT NOW(),
+  currency      VARCHAR(3)    NOT NULL DEFAULT 'EUR',
   updated_at    TIMESTAMPTZ   DEFAULT NOW()
 );
 
@@ -47,8 +48,9 @@ CREATE TABLE trip_stops (
   lng         DOUBLE PRECISION  NOT NULL,
   lat         DOUBLE PRECISION  NOT NULL,
   notes       TEXT              DEFAULT '',
-  nights      INTEGER           NOT NULL DEFAULT 1 CHECK (nights >= 1),
-  created_at  TIMESTAMPTZ       DEFAULT NOW(),
+  nights          INTEGER           NOT NULL DEFAULT 1 CHECK (nights >= 1),
+  price_per_night DOUBLE PRECISION,
+  created_at      TIMESTAMPTZ       DEFAULT NOW(),
   updated_at  TIMESTAMPTZ       DEFAULT NOW(),
   CONSTRAINT uq_trip_stop_sort UNIQUE (trip_id, sort_index) DEFERRABLE INITIALLY DEFERRED
 );
@@ -71,6 +73,7 @@ CREATE TABLE movements (
   carrier           VARCHAR(200)  DEFAULT '',
   booking_ref       VARCHAR(200)  DEFAULT '',
   notes             TEXT          DEFAULT '',
+  price             DOUBLE PRECISION,
   created_at        TIMESTAMPTZ   DEFAULT NOW(),
   updated_at        TIMESTAMPTZ   DEFAULT NOW(),
   UNIQUE (from_stop_id, to_stop_id),
@@ -99,7 +102,7 @@ CREATE TABLE activities (
   notes             TEXT              DEFAULT '',
   category          VARCHAR(100)      DEFAULT '',
   opening_hours     TEXT              DEFAULT '',
-  price_info        TEXT              DEFAULT '',
+  price             DOUBLE PRECISION,
   tips              TEXT              DEFAULT '',
   website_url       VARCHAR(500)      DEFAULT '',
   phone             VARCHAR(50)       DEFAULT '',

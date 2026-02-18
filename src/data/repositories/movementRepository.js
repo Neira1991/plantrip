@@ -16,6 +16,7 @@ export const movementRepository = {
       carrier: data.carrier ?? '',
       bookingRef: data.bookingRef ?? '',
       notes: data.notes ?? '',
+      price: data.price ?? null,
     })
   },
 

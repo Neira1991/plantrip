@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     COOKIE_SECURE: bool = False
-    OPENTRIPMAP_API_KEY: str = ""
     UNSPLASH_ACCESS_KEY: str = ""
 
     model_config = {"env_file": ".env"}
