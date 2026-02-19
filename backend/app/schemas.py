@@ -29,10 +29,24 @@ class OrgInfo(BaseModel):
 class UserResponse(BaseModel):
     id: UUID
     email: str
+    email_verified: bool = False
     created_at: datetime
     organization: OrgInfo | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
 
 
 # --- Trip ---

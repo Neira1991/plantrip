@@ -8,6 +8,10 @@ import Home from './pages/Home'
 import TripDetail from './pages/TripDetail'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import VerifyEmail from './pages/VerifyEmail'
+import InviteAccept from './pages/InviteAccept'
 import SharedTrip from './pages/SharedTrip'
 import ActivityDetail from './pages/ActivityDetail'
 import Organization from './pages/Organization'
@@ -37,6 +41,10 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/invite/:token" element={<InviteAccept />} />
         <Route path="/shared/:token" element={<SharedTrip />} />
         <Route
           path="/"

@@ -1,4 +1,6 @@
 import os
+import secrets
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from slowapi import Limiter
@@ -16,8 +18,9 @@ from app.auth import (
 )
 from app.config import settings
 from app.database import get_db
+from app.email import send_email_verification, send_welcome_email
 from app.models import Organization, OrganizationMember, User
-from app.schemas import OrgInfo, UserLogin, UserRegister, UserResponse
+from app.schemas import OrgInfo, UserLogin, UserRegister, UserResponse, VerifyEmailRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 _testing = os.environ.get("TESTING", "").lower() == "true"
@@ -63,10 +66,20 @@ async def register(request: Request, data: UserRegister, response: Response, db:
     if result.scalars().first():
         raise HTTPException(status_code=409, detail="Email already registered")
 
-    user = User(email=normalized_email, hashed_password=hash_password(data.password))
+    verification_token = secrets.token_urlsafe(48)
+    user = User(
+        email=normalized_email,
+        hashed_password=hash_password(data.password),
+        email_verification_token=verification_token,
+        email_verification_sent_at=datetime.now(timezone.utc),
+    )
     db.add(user)
     await db.commit()
     await db.refresh(user)
+
+    # Fire-and-forget emails
+    await send_email_verification(normalized_email, verification_token)
+    await send_welcome_email(normalized_email)
 
     _set_auth_cookies(response, user)
     return user
@@ -154,6 +167,43 @@ async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(
     return UserResponse(
         id=user.id,
         email=user.email,
+        email_verified=user.email_verified,
         created_at=user.created_at,
         organization=org_info,
     )
+
+
+@router.post("/verify-email")
+async def verify_email(data: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
+    """Verify email address using token."""
+    result = await db.execute(
+        select(User).where(User.email_verification_token == data.token)
+    )
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+
+    user.email_verified = True
+    user.email_verification_token = None
+    await db.commit()
+    return {"status": "verified"}
+
+
+@router.post("/resend-verification")
+@limiter.limit("2/minute")
+async def resend_verification(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Resend verification email for the currently logged-in user."""
+    if user.email_verified:
+        return {"status": "already_verified"}
+
+    token = secrets.token_urlsafe(48)
+    user.email_verification_token = token
+    user.email_verification_sent_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    await send_email_verification(user.email, token)
+    return {"status": "sent"}

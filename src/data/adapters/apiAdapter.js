@@ -135,4 +135,36 @@ export const apiAdapter = {
     const data = await request('/auth/me', { _isRetry: false })
     return camelizeKeys(data)
   },
+
+  async forgotPassword(email) {
+    return await request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  },
+
+  async resetPassword(token, newPassword) {
+    return await request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, new_password: newPassword }),
+    })
+  },
+
+  async verifyEmail(token) {
+    return await request('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    })
+  },
+
+  async resendVerification() {
+    return await request('/auth/resend-verification', {
+      method: 'POST',
+    })
+  },
+
+  async getInviteInfo(token) {
+    const data = await request(`/org/invites/${token}/info`)
+    return camelizeKeys(data)
+  },
 }

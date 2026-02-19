@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import './Auth.css'
 
@@ -8,12 +8,14 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const { login, error, isLoading, clearError } = useAuthStore()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get('redirect')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
       await login(email, password)
-      navigate('/')
+      navigate(redirect || '/')
     } catch {
       // error is already set in store
     }
@@ -65,6 +67,9 @@ export default function Login() {
           </button>
         </form>
 
+        <p className="auth-link">
+          <Link to="/forgot-password">Forgot password?</Link>
+        </p>
         <p className="auth-link">
           Don't have an account? <Link to="/register">Create one</Link>
         </p>

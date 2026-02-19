@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import './Auth.css'
 
@@ -10,6 +10,8 @@ export default function Register() {
   const [localError, setLocalError] = useState('')
   const { register, error, isLoading, clearError } = useAuthStore()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get('redirect')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -26,7 +28,7 @@ export default function Register() {
 
     try {
       await register(email, password)
-      navigate('/')
+      navigate(redirect || '/')
     } catch {
       // error is already set in store
     }

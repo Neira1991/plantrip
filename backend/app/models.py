@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime, time
 
-from sqlalchemy import CheckConstraint, Date, DateTime, Float, ForeignKey, Integer, String, Text, Time, UniqueConstraint, func
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, Float, ForeignKey, Integer, String, Text, Time, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -15,6 +15,9 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(128), nullable=False)
+    email_verified: Mapped[bool] = mapped_column(default=False)
+    email_verification_token: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
+    email_verification_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     trips: Mapped[list["Trip"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
@@ -208,4 +211,17 @@ class ShareToken(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     trip: Mapped["Trip"] = relationship("Trip")
+    user: Mapped["User"] = relationship("User")
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
     user: Mapped["User"] = relationship("User")

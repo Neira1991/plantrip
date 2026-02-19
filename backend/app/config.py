@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     COOKIE_SECURE: bool = False
     UNSPLASH_ACCESS_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "onboarding@resend.dev"
+    FRONTEND_URL: str = "http://localhost:5173"
 
     model_config = {"env_file": ".env"}
 

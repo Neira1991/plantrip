@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user
 from app.database import get_db
+from app.email import send_invite_email
 from app.models import Organization, OrganizationInvite, OrganizationMember, Trip, User
 from app.permissions import get_org_membership, require_org_admin, require_org_member
 from app.schemas import (
@@ -399,6 +400,11 @@ async def create_invite(
     await db.commit()
     await db.refresh(invite)
 
+    # Send invite email
+    org = await db.get(Organization, membership.organization_id)
+    org_name = org.name if org else "an organization"
+    await send_invite_email(data.email, org_name, data.role, token)
+
     return invite
 
 
@@ -503,6 +509,38 @@ async def accept_invite(
         updated_at=org.updated_at,
         member_count=member_count,
     )
+
+
+# --- Public Invite Info ---
+
+@router.get("/invites/{token}/info")
+@limiter.limit("10/minute")
+async def get_invite_info(
+    token: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Public endpoint to get invite info for the landing page. No auth required."""
+    result = await db.execute(
+        select(OrganizationInvite).where(OrganizationInvite.token == token)
+    )
+    invite = result.scalars().first()
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite not found")
+
+    if invite.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invite has expired")
+    if invite.accepted_at is not None:
+        raise HTTPException(status_code=400, detail="Invite has already been accepted")
+
+    org = await db.get(Organization, invite.organization_id)
+    org_name = org.name if org else "Unknown"
+
+    return {
+        "org_name": org_name,
+        "role": invite.role,
+        "email": invite.email,
+    }
 
 
 # --- Admin Views ---
