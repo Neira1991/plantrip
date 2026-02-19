@@ -8,3 +8,6 @@ PyJWT
 slowapi
 httpx
 anthropic
+alembic
+pytest
+pytest-asyncio

@@ -13,6 +13,14 @@ async def get_db():
 
 
 async def create_tables():
+    """Create all tables using SQLAlchemy metadata.
+
+    Note: This is kept for development convenience and backwards compatibility.
+    In production, use Alembic migrations instead:
+        alembic upgrade head
+
+    For new deployments, run migrations before starting the application.
+    """
     from app.models import Base
 
     async with engine.begin() as conn:

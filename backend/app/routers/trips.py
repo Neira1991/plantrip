@@ -8,7 +8,8 @@ from sqlalchemy.orm import selectinload
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Activity, Movement, Trip, TripStop, User
+from app.models import Activity, Movement, OrganizationMember, Trip, TripStop, User
+from app.permissions import get_org_membership
 from app.routers.stops import recalculate_end_date
 from app.schemas import (
     BudgetSummary,
@@ -58,8 +59,13 @@ async def create_trip(
     if result.scalars().first():
         raise HTTPException(status_code=409, detail="A trip for this country already exists")
 
+    # Get organization membership if exists
+    membership = await get_org_membership(user, db)
+    organization_id = membership.organization_id if membership else None
+
     trip = Trip(
         user_id=user.id,
+        organization_id=organization_id,
         name=data.name,
         country_code=data.country_code,
         start_date=data.start_date,

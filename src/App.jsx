@@ -10,6 +10,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import SharedTrip from './pages/SharedTrip'
 import ActivityDetail from './pages/ActivityDetail'
+import Organization from './pages/Organization'
 import './App.css'
 
 function App() {
@@ -58,6 +59,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ActivityDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/organization"
+          element={
+            <ProtectedRoute>
+              <Organization />
             </ProtectedRoute>
           }
         />

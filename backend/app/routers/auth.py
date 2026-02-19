@@ -3,7 +3,7 @@ import os
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import (
@@ -16,8 +16,8 @@ from app.auth import (
 )
 from app.config import settings
 from app.database import get_db
-from app.models import User
-from app.schemas import UserLogin, UserRegister, UserResponse
+from app.models import Organization, OrganizationMember, User
+from app.schemas import OrgInfo, UserLogin, UserRegister, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 _testing = os.environ.get("TESTING", "").lower() == "true"
@@ -55,11 +55,15 @@ async def register(request: Request, data: UserRegister, response: Response, db:
     if len(data.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
 
-    result = await db.execute(select(User).where(User.email == data.email))
+    # Normalize email to lowercase for case-insensitive storage
+    normalized_email = data.email.strip().lower()
+
+    # Check for existing user with case-insensitive comparison
+    result = await db.execute(select(User).where(func.lower(User.email) == normalized_email))
     if result.scalars().first():
         raise HTTPException(status_code=409, detail="Email already registered")
 
-    user = User(email=data.email, hashed_password=hash_password(data.password))
+    user = User(email=normalized_email, hashed_password=hash_password(data.password))
     db.add(user)
     await db.commit()
     await db.refresh(user)
@@ -71,7 +75,9 @@ async def register(request: Request, data: UserRegister, response: Response, db:
 @router.post("/login", response_model=UserResponse)
 @limiter.limit("5/minute")
 async def login(request: Request, data: UserLogin, response: Response, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email == data.email))
+    # Normalize email to lowercase for case-insensitive lookup
+    normalized_email = data.email.strip().lower()
+    result = await db.execute(select(User).where(func.lower(User.email) == normalized_email))
     user = result.scalars().first()
 
     if not user or not verify_password(data.password, user.hashed_password):
@@ -126,5 +132,28 @@ async def logout(response: Response):
 
 
 @router.get("/me", response_model=UserResponse)
-async def me(user: User = Depends(get_current_user)):
-    return user
+async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    # Get organization membership if exists
+    result = await db.execute(
+        select(OrganizationMember, Organization)
+        .join(Organization, OrganizationMember.organization_id == Organization.id)
+        .where(OrganizationMember.user_id == user.id)
+    )
+    membership_org = result.first()
+
+    org_info = None
+    if membership_org:
+        membership, org = membership_org
+        org_info = OrgInfo(
+            id=org.id,
+            name=org.name,
+            slug=org.slug,
+            role=membership.role,
+        )
+
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        created_at=user.created_at,
+        organization=org_info,
+    )

@@ -5,7 +5,7 @@ import { apiAdapter } from '../data/adapters/apiAdapter'
 export const useAuthStore = create(
   devtools(
     (set) => ({
-      user: null,
+      user: null, // { id, email, organization: { id, name, slug, role } | null }
       isAuthenticated: false,
       isLoading: true,
       error: null,

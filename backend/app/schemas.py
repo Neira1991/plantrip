@@ -17,10 +17,20 @@ class UserLogin(BaseModel):
     password: str
 
 
+class OrgInfo(BaseModel):
+    id: UUID
+    name: str
+    slug: str
+    role: str
+
+    model_config = {"from_attributes": True}
+
+
 class UserResponse(BaseModel):
     id: UUID
     email: str
     created_at: datetime
+    organization: OrgInfo | None = None
 
     model_config = {"from_attributes": True}
 
@@ -339,3 +349,122 @@ class GeonameResponse(BaseModel):
     lon: float
     population: int = 0
     country: str = ""
+
+
+# --- Organization ---
+
+class OrganizationCreate(BaseModel):
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v or len(v) < 1 or len(v) > 200:
+            raise ValueError("Organization name must be between 1 and 200 characters")
+        return v
+
+
+class OrganizationUpdate(BaseModel):
+    name: str | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str | None) -> str | None:
+        if v is not None:
+            v = v.strip()
+            if not v or len(v) < 1 or len(v) > 200:
+                raise ValueError("Organization name must be between 1 and 200 characters")
+        return v
+
+
+class OrganizationResponse(BaseModel):
+    id: UUID
+    name: str
+    slug: str
+    created_at: datetime
+    updated_at: datetime
+    member_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+class OrganizationMemberResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    email: str
+    role: str
+    trip_count: int = 0
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class InviteCreate(BaseModel):
+    email: str
+    role: str = "designer"
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not v or "@" not in v:
+            raise ValueError("Invalid email address")
+        if len(v) > 320:
+            raise ValueError("Email address too long")
+        return v
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        if v not in ["admin", "designer"]:
+            raise ValueError("Role must be 'admin' or 'designer'")
+        return v
+
+
+class InviteResponse(BaseModel):
+    id: UUID
+    email: str
+    role: str
+    token: str
+    expires_at: datetime
+    created_at: datetime
+    accepted_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class OrgTripResponse(BaseModel):
+    id: UUID
+    name: str
+    country_code: str
+    status: str
+    start_date: DateType | None
+    end_date: DateType | None
+    created_at: datetime
+    designer_email: str
+
+    model_config = {"from_attributes": True}
+
+
+class TripsPerDesigner(BaseModel):
+    email: str
+    count: int
+
+
+class OrgStatsResponse(BaseModel):
+    total_trips: int
+    total_members: int
+    trips_by_designer: list[TripsPerDesigner]
+    trips_by_status: dict[str, int]
+
+
+class UpdateMemberRoleRequest(BaseModel):
+    role: str
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        if v not in ["admin", "designer"]:
+            raise ValueError("Role must be 'admin' or 'designer'")
+        return v
