@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import MapboxMap from '../components/MapboxMap'
 import PhotoGallery from '../components/PhotoGallery'
@@ -59,18 +59,6 @@ export default function ActivityDetail() {
     return () => { cancelled = true }
   }, [activityId])
 
-  const handleLoadPhotos = useCallback(async () => {
-    if (photosLoading) return
-    setPhotosLoading(true)
-    try {
-      const photos = await apiAdapter.post(`/activities/${activityId}/photos`)
-      setActivity(prev => prev ? { ...prev, photos } : prev)
-    } catch {
-      // Failed to load photos
-    } finally {
-      setPhotosLoading(false)
-    }
-  }, [activityId, photosLoading])
 
   const startEdit = (field, currentValue) => {
     setEditingField(field)
@@ -220,7 +208,7 @@ export default function ActivityDetail() {
         {/* Photo Gallery */}
         <div className="ad-photo-section">
           {hasPhotos ? (
-            <PhotoGallery photos={activity.photos} onRefresh={handleLoadPhotos} refreshing={photosLoading} />
+            <PhotoGallery photos={activity.photos} />
           ) : photosLoading ? (
             <div className="ad-photo-placeholder">
               <p className="ad-photo-hint">Loading photos...</p>

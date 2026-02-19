@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './PhotoGallery.css'
 
-export default function PhotoGallery({ photos, onRefresh, refreshing, readOnly }) {
+export default function PhotoGallery({ photos }) {
   const [lightboxIndex, setLightboxIndex] = useState(null)
   const scrollRef = useRef(null)
 
@@ -37,16 +37,6 @@ export default function PhotoGallery({ photos, onRefresh, refreshing, readOnly }
             </button>
           ))}
         </div>
-        {!readOnly && onRefresh && (
-          <button
-            className="photo-gallery-refresh"
-            onClick={onRefresh}
-            disabled={refreshing}
-            title="Refresh photos"
-          >
-            {refreshing ? '...' : '\u21BB'}
-          </button>
-        )}
       </div>
 
       {/* Lightbox */}

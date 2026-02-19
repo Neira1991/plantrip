@@ -110,7 +110,7 @@ function SharedActivityItem({ activity, currency }) {
       {expanded && (
         <div className="shared-activity-details">
           {hasPhotos && (
-            <PhotoGallery photos={activity.photos} readOnly />
+            <PhotoGallery photos={activity.photos} />
           )}
           {activity.openingHours && (
             <div className="shared-activity-info-row">
