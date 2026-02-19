@@ -298,7 +298,7 @@ export default function TripDetail() {
             </button>
           )}
 
-          {mode === 'view' && !isNew && (
+          {mode === 'view' && !isNew && stops.length > 0 && (
             <button
               className="btn-header-icon"
               onClick={() => setShowAiPrompt(true)}
@@ -339,6 +339,53 @@ export default function TripDetail() {
             activities={activities.filter(a => a.lng != null && a.lat != null)}
           />
         </div>
+
+        {!isNew && mode === 'view' && stops.length === 0 && !showItinerary && (
+          <div className="empty-state-overlay">
+            <div className="empty-state-card" role="region" aria-label="Generate itinerary">
+              {aiGenerating ? (
+                <div className="empty-state-generating">
+                  <div className="ai-prompt-spinner" />
+                  <span>Generating your itinerary...</span>
+                </div>
+              ) : (
+                <>
+                  <h2 className="empty-state-title">Start Your Journey</h2>
+                  <p className="empty-state-description">
+                    Tell me about your trip and I'll create a full itinerary for you.
+                  </p>
+                  <textarea
+                    className="empty-state-textarea"
+                    data-testid="empty-ai-prompt-input"
+                    value={aiPrompt}
+                    onChange={e => setAiPrompt(e.target.value)}
+                    placeholder="e.g., 10 days exploring Rome, Florence, and Venice. I love history, art, and authentic food."
+                    maxLength={2000}
+                    autoFocus
+                    rows={3}
+                  />
+                  {aiError && <p className="ai-prompt-error" data-testid="empty-ai-prompt-error">{aiError}</p>}
+                  <div className="empty-state-actions">
+                    <button
+                      className="btn-save empty-state-generate-btn"
+                      data-testid="btn-empty-ai-submit"
+                      onClick={handleGenerate}
+                      disabled={!aiPrompt.trim()}
+                    >
+                      Generate Itinerary
+                    </button>
+                  </div>
+                  <button
+                    className="empty-state-manual-link"
+                    onClick={() => setShowCitySearch(true)}
+                  >
+                    or add stops manually
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {showItinerary && (
           <ItineraryPanel
