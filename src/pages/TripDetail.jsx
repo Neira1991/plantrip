@@ -45,6 +45,7 @@ export default function TripDetail() {
     stops,
     movements,
     activities,
+    loadItinerary,
     addStop,
     updateStop,
     removeStop,
@@ -72,6 +73,10 @@ export default function TripDetail() {
   const [toast, setToast] = useState(null)
   const [sharePopup, setSharePopup] = useState(null)
   const [shareLoading, setShareLoading] = useState(false)
+  const [showAiPrompt, setShowAiPrompt] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiGenerating, setAiGenerating] = useState(false)
+  const [aiError, setAiError] = useState(null)
   useEffect(() => {
     if (trip) {
       setName(trip.name || '')
@@ -246,6 +251,25 @@ export default function TripDetail() {
     }
   }
 
+  async function handleGenerate() {
+    if (aiGenerating) return
+    setAiGenerating(true)
+    setAiError(null)
+    try {
+      await apiAdapter.post(`/trips/${tripId}/generate`, { prompt: aiPrompt })
+      await loadItinerary(tripId)
+      await loadTrips()
+      setShowAiPrompt(false)
+      setAiPrompt('')
+      setShowItinerary(true)
+      showToast('Itinerary generated!')
+    } catch (err) {
+      setAiError(err.message || 'Failed to generate itinerary')
+    } finally {
+      setAiGenerating(false)
+    }
+  }
+
   return (
     <div className="trip-detail">
       {/* ── Header ── */}
@@ -271,6 +295,17 @@ export default function TripDetail() {
               data-testid="btn-open-itinerary"
             >
               📍{stops.length > 0 && <span className="cities-badge">{stops.length}</span>}
+            </button>
+          )}
+
+          {mode === 'view' && !isNew && (
+            <button
+              className="btn-header-icon"
+              onClick={() => setShowAiPrompt(true)}
+              title="AI Generate"
+              data-testid="btn-ai-generate"
+            >
+              AI
             </button>
           )}
 
@@ -469,6 +504,45 @@ export default function TripDetail() {
               <button className="share-popup-revoke" onClick={handleRevokeShare}>Revoke link</button>
               <button className="share-popup-close" onClick={() => setSharePopup(null)}>Close</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showAiPrompt && (
+        <div className="ai-prompt-overlay" onClick={() => !aiGenerating && setShowAiPrompt(false)}>
+          <div className="ai-prompt-card" onClick={e => e.stopPropagation()}>
+            <h3 className="ai-prompt-title">Generate Itinerary with AI</h3>
+            <p className="ai-prompt-description">Describe your ideal trip and AI will create a complete itinerary.</p>
+            <textarea
+              className="ai-prompt-textarea"
+              data-testid="ai-prompt-input"
+              value={aiPrompt}
+              onChange={e => setAiPrompt(e.target.value)}
+              placeholder="e.g., 10 days, Rome → Florence → Venice, focus on history and food, moderate budget"
+              maxLength={2000}
+              autoFocus
+              disabled={aiGenerating}
+              rows={4}
+            />
+            {aiError && <p className="ai-prompt-error" data-testid="ai-prompt-error">{aiError}</p>}
+            {aiGenerating ? (
+              <div className="ai-prompt-loading">
+                <div className="ai-prompt-spinner" />
+                <span>Generating your itinerary...</span>
+              </div>
+            ) : (
+              <div className="ai-prompt-actions">
+                <button className="btn-cancel" onClick={() => setShowAiPrompt(false)}>Cancel</button>
+                <button
+                  className="btn-save"
+                  data-testid="btn-ai-submit"
+                  onClick={handleGenerate}
+                  disabled={!aiPrompt.trim()}
+                >
+                  Generate
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

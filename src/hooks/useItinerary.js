@@ -115,6 +115,7 @@ export function useItinerary(tripId, tripStartDate) {
     timeline,
     budget,
     isLoading,
+    loadItinerary,
     addStop,
     updateStop,
     removeStop,

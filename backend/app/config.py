@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     COOKIE_SECURE: bool = False
     UNSPLASH_ACCESS_KEY: str = ""
+    ANTHROPIC_API_KEY: str = ""
 
     model_config = {"env_file": ".env"}
 
