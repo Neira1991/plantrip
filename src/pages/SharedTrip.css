@@ -69,12 +69,74 @@
 
 .shared-header-right {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shared-feedback-toggle {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #ccc;
+  font-size: 0.7rem;
+  font-family: inherit;
+  padding: 4px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.shared-feedback-toggle:hover {
+  background: #222;
+  color: #fff;
+}
+
+.shared-feedback-toggle.active {
+  background: rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.3);
+  color: #7e94ff;
 }
 
 .shared-expiry {
   font-size: 0.7rem;
   color: #888;
   white-space: nowrap;
+}
+
+/* -- Feedback bar -- */
+
+.shared-feedback-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: #0f0f0f;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+
+.shared-feedback-name-label {
+  font-size: 0.75rem;
+  color: #888;
+  white-space: nowrap;
+}
+
+.shared-feedback-name-input {
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 0.75rem;
+  font-family: inherit;
+  padding: 4px 10px;
+  width: 160px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.shared-feedback-name-input:focus {
+  border-color: #667eea;
 }
 
 /* -- Content -- */

@@ -3,6 +3,8 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import MapboxMap from '../components/MapboxMap'
 import CityAutocomplete from '../components/CityAutocomplete'
 import ItineraryPanel from '../components/ItineraryPanel'
+import FeedbackPanel from '../components/FeedbackPanel'
+import VersionsPanel from '../components/VersionsPanel'
 import DeleteConfirm from '../components/TripsPanel/DeleteConfirm'
 import { useTrips } from '../hooks/useTrips'
 import { useItinerary } from '../hooks/useItinerary'
@@ -77,6 +79,8 @@ export default function TripDetail() {
   const [aiPrompt, setAiPrompt] = useState('')
   const [aiGenerating, setAiGenerating] = useState(false)
   const [aiError, setAiError] = useState(null)
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [showVersions, setShowVersions] = useState(false)
   useEffect(() => {
     if (trip) {
       setName(trip.name || '')
@@ -251,6 +255,12 @@ export default function TripDetail() {
     }
   }
 
+  async function handleVersionRestored() {
+    await loadItinerary(tripId)
+    await loadTrips()
+    showToast('Version restored successfully')
+  }
+
   async function handleGenerate() {
     if (aiGenerating) return
     setAiGenerating(true)
@@ -322,8 +332,30 @@ export default function TripDetail() {
           )}
 
           {mode === 'view' && !isNew && (
+            <button
+              className="btn-header-icon"
+              onClick={() => setShowFeedback(true)}
+              title="View feedback"
+              data-testid="btn-feedback"
+            >
+              {'\u{1F4AC}'}
+            </button>
+          )}
+
+          {mode === 'view' && !isNew && (
+            <button
+              className="btn-header-icon"
+              onClick={() => setShowVersions(true)}
+              title="Version history"
+              data-testid="btn-versions"
+            >
+              {'\u{1F4BE}'}
+            </button>
+          )}
+
+          {mode === 'view' && !isNew && (
             <button className="btn-header-icon" onClick={() => setMode('edit')} title="Edit trip" data-testid="btn-edit-trip">
-              ✏️
+              {'\u270F\uFE0F'}
             </button>
           )}
         </div>
@@ -595,6 +627,19 @@ export default function TripDetail() {
           </div>
         </div>
       )}
+
+      <FeedbackPanel
+        isOpen={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        tripId={tripId}
+      />
+
+      <VersionsPanel
+        isOpen={showVersions}
+        onClose={() => setShowVersions(false)}
+        tripId={tripId}
+        onRestored={handleVersionRestored}
+      />
     </div>
   )
 }

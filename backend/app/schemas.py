@@ -482,3 +482,108 @@ class UpdateMemberRoleRequest(BaseModel):
         if v not in ["admin", "designer"]:
             raise ValueError("Role must be 'admin' or 'designer'")
         return v
+
+
+# --- Feedback ---
+
+class FeedbackCreate(BaseModel):
+    activity_id: UUID
+    viewer_session_id: str
+    viewer_name: str = "Anonymous"
+    sentiment: str
+    message: str = ""
+
+    @field_validator("sentiment")
+    @classmethod
+    def validate_sentiment(cls, v: str) -> str:
+        if v not in ["like", "dislike"]:
+            raise ValueError("sentiment must be 'like' or 'dislike'")
+        return v
+
+    @field_validator("viewer_name")
+    @classmethod
+    def validate_viewer_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            v = "Anonymous"
+        if len(v) > 100:
+            raise ValueError("viewer_name must be at most 100 characters")
+        return v
+
+    @field_validator("viewer_session_id")
+    @classmethod
+    def validate_viewer_session_id(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("viewer_session_id is required")
+        if len(v) > 64:
+            raise ValueError("viewer_session_id must be at most 64 characters")
+        return v
+
+
+class FeedbackResponse(BaseModel):
+    id: UUID
+    activity_id: UUID | None
+    activity_title: str = ""
+    viewer_name: str
+    sentiment: str
+    message: str
+    version_number: int | None = None
+    version_label: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ActivityFeedbackSummary(BaseModel):
+    activity_id: UUID | None
+    activity_title: str
+    likes: int
+    dislikes: int
+    feedback: list[FeedbackResponse]
+
+
+class VersionFeedbackGroup(BaseModel):
+    version_id: UUID | None
+    version_number: int | None
+    version_label: str | None
+    activities: list[ActivityFeedbackSummary]
+
+
+class TripFeedbackResponse(BaseModel):
+    trip_id: UUID
+    versions: list[VersionFeedbackGroup]
+
+
+# --- Trip Versions ---
+
+class VersionCreate(BaseModel):
+    label: str = ""
+
+    @field_validator("label")
+    @classmethod
+    def validate_label(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) > 200:
+            raise ValueError("label must be at most 200 characters")
+        return v
+
+
+class VersionMetaResponse(BaseModel):
+    id: UUID
+    trip_id: UUID
+    version_number: int
+    label: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class VersionDetailResponse(BaseModel):
+    id: UUID
+    trip_id: UUID
+    version_number: int
+    label: str
+    snapshot_data: dict[str, Any]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

@@ -2,6 +2,7 @@ import uuid
 from datetime import date, datetime, time
 
 from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, Float, ForeignKey, Integer, String, Text, Time, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -44,6 +45,7 @@ class Trip(Base):
     organization: Mapped["Organization | None"] = relationship(back_populates="trips")
     stops: Mapped[list["TripStop"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
     movements: Mapped[list["Movement"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
+    versions: Mapped[list["TripVersion"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
 
 
 class TripStop(Base):
@@ -134,6 +136,7 @@ class Activity(Base):
 
     stop: Mapped["TripStop"] = relationship(back_populates="activities")
     photos: Mapped[list["ActivityPhoto"]] = relationship(back_populates="activity", cascade="all, delete-orphan")
+    feedback: Mapped[list["ActivityFeedback"]] = relationship(back_populates="activity")
 
 
 class ActivityPhoto(Base):
@@ -212,6 +215,7 @@ class ShareToken(Base):
 
     trip: Mapped["Trip"] = relationship("Trip")
     user: Mapped["User"] = relationship("User")
+    feedback: Mapped[list["ActivityFeedback"]] = relationship(back_populates="share_token", cascade="all, delete-orphan")
 
 
 class PasswordResetToken(Base):
@@ -225,3 +229,42 @@ class PasswordResetToken(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["User"] = relationship("User")
+
+
+class ActivityFeedback(Base):
+    __tablename__ = "activity_feedback"
+    __table_args__ = (
+        CheckConstraint("sentiment IN ('like', 'dislike')", name="ck_activity_feedback_sentiment"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    share_token_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("share_tokens.id", ondelete="CASCADE"), nullable=False, index=True)
+    activity_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("activities.id", ondelete="SET NULL"), nullable=True, index=True)
+    version_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("trip_versions.id", ondelete="SET NULL"), nullable=True, index=True)
+    activity_title: Mapped[str] = mapped_column(String(200), server_default="")
+    viewer_session_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    viewer_name: Mapped[str] = mapped_column(String(100), nullable=False, server_default="Anonymous")
+    sentiment: Mapped[str] = mapped_column(String(10), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    share_token: Mapped["ShareToken"] = relationship(back_populates="feedback")
+    activity: Mapped["Activity | None"] = relationship(back_populates="feedback")
+    version: Mapped["TripVersion | None"] = relationship("TripVersion", back_populates="feedback")
+
+
+class TripVersion(Base):
+    __tablename__ = "trip_versions"
+    __table_args__ = (
+        UniqueConstraint("trip_id", "version_number", name="uq_trip_versions_trip_version"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    trip_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    label: Mapped[str] = mapped_column(String(200), nullable=False, server_default="")
+    snapshot_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    trip: Mapped["Trip"] = relationship(back_populates="versions")
+    feedback: Mapped[list["ActivityFeedback"]] = relationship(back_populates="version")

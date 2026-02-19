@@ -167,4 +167,52 @@ export const apiAdapter = {
     const data = await request(`/org/invites/${token}/info`)
     return camelizeKeys(data)
   },
+
+  // Feedback
+  async submitFeedback(token, body) {
+    const data = await request(`/shared/${token}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify(snakifyKeys(body)),
+    })
+    return camelizeKeys(data)
+  },
+
+  async getTripFeedback(tripId) {
+    const data = await request(`/trips/${tripId}/feedback`)
+    return camelizeKeys(data)
+  },
+
+  async deleteFeedback(tripId, feedbackId) {
+    await request(`/trips/${tripId}/feedback/${feedbackId}`, { method: 'DELETE' })
+  },
+
+  // Versions
+  async createVersion(tripId, body) {
+    const data = await request(`/trips/${tripId}/versions`, {
+      method: 'POST',
+      body: JSON.stringify(snakifyKeys(body)),
+    })
+    return camelizeKeys(data)
+  },
+
+  async listVersions(tripId) {
+    const data = await request(`/trips/${tripId}/versions`)
+    return camelizeKeys(data)
+  },
+
+  async getVersion(tripId, versionId) {
+    const data = await request(`/trips/${tripId}/versions/${versionId}`)
+    return camelizeKeys(data)
+  },
+
+  async restoreVersion(tripId, versionId) {
+    const data = await request(`/trips/${tripId}/versions/${versionId}/restore`, {
+      method: 'POST',
+    })
+    return camelizeKeys(data)
+  },
+
+  async deleteVersion(tripId, versionId) {
+    await request(`/trips/${tripId}/versions/${versionId}`, { method: 'DELETE' })
+  },
 }

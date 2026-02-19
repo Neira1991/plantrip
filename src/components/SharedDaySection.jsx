@@ -36,7 +36,7 @@ function formatDuration(mins) {
   return `${h}h${m}m`
 }
 
-export default function SharedDaySection({ day, currency }) {
+export default function SharedDaySection({ day, currency, feedbackMode, feedbackByActivity, feedbackSubmitting, onFeedback }) {
   return (
     <div className="shared-day-section">
       <div className="shared-day-header">
@@ -48,7 +48,15 @@ export default function SharedDaySection({ day, currency }) {
       {day.activities.length > 0 && (
         <div className="shared-day-activities">
           {day.activities.map(activity => (
-            <SharedActivityItem key={activity.id} activity={activity} currency={currency} />
+            <SharedActivityItem
+              key={activity.id}
+              activity={activity}
+              currency={currency}
+              feedbackMode={feedbackMode}
+              feedback={feedbackByActivity?.[activity.id]}
+              feedbackSubmitting={feedbackSubmitting}
+              onFeedback={onFeedback}
+            />
           ))}
         </div>
       )}
@@ -76,13 +84,15 @@ export default function SharedDaySection({ day, currency }) {
   )
 }
 
-function SharedActivityItem({ activity, currency }) {
+function SharedActivityItem({ activity, currency, feedbackMode, feedback, feedbackSubmitting, onFeedback }) {
   const [expanded, setExpanded] = useState(false)
+  const [message, setMessage] = useState('')
   const hasPhotos = activity.photos && activity.photos.length > 0
   const categoryLabel = activity.category
     ? activity.category.split(',')[0].replace(/_/g, ' ')
     : null
   const hasEnrichedInfo = activity.openingHours || activity.price != null || categoryLabel || activity.rating != null
+  const hasSent = !!feedback
 
   return (
     <div className="shared-activity-item-wrap">
@@ -123,6 +133,41 @@ function SharedActivityItem({ activity, currency }) {
               <span className="shared-info-icon">{'\u{1F4B0}'}</span>
               <span>{formatPrice(activity.price, currency)}</span>
             </div>
+          )}
+        </div>
+      )}
+      {feedbackMode && (
+        <div className="shared-activity-feedback-btns">
+          {hasSent ? (
+            <span className="shared-fb-sent">Sent</span>
+          ) : (
+            <>
+              <button
+                className="shared-fb-btn shared-fb-like"
+                onClick={() => onFeedback(activity.id, 'like', message)}
+                disabled={feedbackSubmitting}
+                aria-label={`Like ${activity.title}`}
+              >
+                {'\u{1F44D}'}
+              </button>
+              <button
+                className="shared-fb-btn shared-fb-dislike"
+                onClick={() => onFeedback(activity.id, 'dislike', message)}
+                disabled={feedbackSubmitting}
+                aria-label={`Dislike ${activity.title}`}
+              >
+                {'\u{1F44E}'}
+              </button>
+              <input
+                type="text"
+                className="shared-fb-message-input"
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                placeholder="Optional note..."
+                maxLength={500}
+                onClick={e => e.stopPropagation()}
+              />
+            </>
           )}
         </div>
       )}

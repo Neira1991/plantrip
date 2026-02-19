@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import MapboxMap from '../components/MapboxMap'
 import SharedDaySection from '../components/SharedDaySection'
@@ -89,12 +89,25 @@ function formatDateShort(dateStr) {
   })
 }
 
+function getViewerSessionId() {
+  let id = localStorage.getItem('plantrip_viewer_session_id')
+  if (!id) {
+    id = crypto.randomUUID()
+    localStorage.setItem('plantrip_viewer_session_id', id)
+  }
+  return id
+}
+
 export default function SharedTrip() {
   const { token } = useParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const [countdown, setCountdown] = useState('')
+  const [feedbackMode, setFeedbackMode] = useState(false)
+  const [viewerName, setViewerName] = useState(() => localStorage.getItem('plantrip_viewer_name') || '')
+  const [feedbackByActivity, setFeedbackByActivity] = useState({})
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
 
   useEffect(() => {
     const meta = document.createElement('meta')
@@ -154,6 +167,33 @@ export default function SharedTrip() {
     return data.stops.flatMap(s => s.activities).filter(a => a.lng != null && a.lat != null)
   }, [data])
 
+  function handleViewerNameChange(name) {
+    setViewerName(name)
+    localStorage.setItem('plantrip_viewer_name', name)
+  }
+
+  const handleFeedback = useCallback(async (activityId, sentiment, message) => {
+    if (feedbackSubmitting) return
+    setFeedbackSubmitting(true)
+    try {
+      await apiAdapter.submitFeedback(token, {
+        activityId,
+        sentiment,
+        message: message || '',
+        viewerName: viewerName.trim() || 'Anonymous',
+        viewerSessionId: getViewerSessionId(),
+      })
+      setFeedbackByActivity(prev => ({
+        ...prev,
+        [activityId]: { sentiment, message },
+      }))
+    } catch {
+      // silently fail
+    } finally {
+      setFeedbackSubmitting(false)
+    }
+  }, [token, viewerName, feedbackSubmitting])
+
   if (loading) {
     return (
       <div className="shared-trip">
@@ -195,9 +235,30 @@ export default function SharedTrip() {
           {dateRange && <span className="shared-trip-dates">{dateRange}</span>}
         </div>
         <div className="shared-header-right">
+          <button
+            className={`shared-feedback-toggle ${feedbackMode ? 'active' : ''}`}
+            onClick={() => setFeedbackMode(v => !v)}
+          >
+            {feedbackMode ? 'Done' : 'Give Feedback'}
+          </button>
           <span className="shared-expiry">{countdown}</span>
         </div>
       </header>
+
+      {feedbackMode && (
+        <div className="shared-feedback-bar">
+          <label className="shared-feedback-name-label" htmlFor="viewer-name">Your name:</label>
+          <input
+            id="viewer-name"
+            type="text"
+            className="shared-feedback-name-input"
+            value={viewerName}
+            onChange={e => handleViewerNameChange(e.target.value)}
+            placeholder="Anonymous"
+            maxLength={100}
+          />
+        </div>
+      )}
 
       <div className="shared-trip-content">
         <div className="shared-trip-map">
@@ -233,6 +294,10 @@ export default function SharedTrip() {
                     key={`${day.stopId}-${day.dayNumber}`}
                     day={day}
                     currency={data.currency}
+                    feedbackMode={feedbackMode}
+                    feedbackByActivity={feedbackByActivity}
+                    feedbackSubmitting={feedbackSubmitting}
+                    onFeedback={handleFeedback}
                   />
                 ))}
               </div>
