@@ -484,19 +484,21 @@ export default function TripDetail() {
               </div>
             )}
 
-            <div className="form-field">
-              <label className="form-label" htmlFor="trip-notes">Notes</label>
-              <textarea
-                id="trip-notes"
-                className="form-input form-textarea"
-                data-testid="trip-notes-input"
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                placeholder="Any details about your trip..."
-                rows={3}
-                maxLength={10000}
-              />
-            </div>
+            {!isNew && (
+              <div className="form-field">
+                <label className="form-label" htmlFor="trip-notes">Notes</label>
+                <textarea
+                  id="trip-notes"
+                  className="form-input form-textarea"
+                  data-testid="trip-notes-input"
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="Any details about your trip..."
+                  rows={3}
+                  maxLength={10000}
+                />
+              </div>
+            )}
 
             {!isNew && (
               <div className="form-field">

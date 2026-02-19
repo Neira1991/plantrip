@@ -34,7 +34,21 @@ export default function ActivityDetail() {
     async function load() {
       try {
         const data = await apiAdapter.get(`/activities/${activityId}`)
-        if (!cancelled) setActivity(data)
+        if (cancelled) return
+        setActivity(data)
+
+        // Auto-load photos if none exist
+        if (!data.photos || data.photos.length === 0) {
+          setPhotosLoading(true)
+          try {
+            const photos = await apiAdapter.post(`/activities/${activityId}/photos`)
+            if (!cancelled) setActivity(prev => prev ? { ...prev, photos } : prev)
+          } catch {
+            // Photos unavailable
+          } finally {
+            if (!cancelled) setPhotosLoading(false)
+          }
+        }
       } catch (err) {
         if (!cancelled) setError(err.message || 'Activity not found')
       } finally {
@@ -207,18 +221,11 @@ export default function ActivityDetail() {
         <div className="ad-photo-section">
           {hasPhotos ? (
             <PhotoGallery photos={activity.photos} onRefresh={handleLoadPhotos} refreshing={photosLoading} />
-          ) : (
+          ) : photosLoading ? (
             <div className="ad-photo-placeholder">
-              <button
-                className="ad-load-photos-btn"
-                onClick={handleLoadPhotos}
-                disabled={photosLoading}
-              >
-                {photosLoading ? 'Loading photos...' : 'Load Photos'}
-              </button>
-              <p className="ad-photo-hint">Fetch travel photos from Unsplash</p>
+              <p className="ad-photo-hint">Loading photos...</p>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Info Section */}
