@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import UUID
 
 import httpx
@@ -10,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.auth import get_current_user
 from app.config import settings
 from app.database import get_db
+from app.dependencies import verify_stop_ownership
 from app.models import Activity, ActivityPhoto, Trip, TripStop, User
 from app.schemas import (
     ActivityCreate,
@@ -20,16 +20,6 @@ from app.schemas import (
 )
 
 router = APIRouter(tags=["activities"])
-
-
-async def _verify_stop_ownership(stop_id: UUID, user: User, db: AsyncSession) -> TripStop:
-    stop = await db.get(TripStop, stop_id)
-    if not stop:
-        raise HTTPException(status_code=404, detail="Stop not found")
-    trip = await db.get(Trip, stop.trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Stop not found")
-    return stop
 
 
 async def _verify_activity_ownership(activity_id: UUID, user: User, db: AsyncSession) -> Activity:
@@ -51,7 +41,7 @@ async def list_activities(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _verify_stop_ownership(stop_id, user, db)
+    await verify_stop_ownership(stop_id, user, db)
     result = await db.execute(
         select(Activity)
         .options(selectinload(Activity.photos))
@@ -68,7 +58,7 @@ async def create_activity(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _verify_stop_ownership(stop_id, user, db)
+    await verify_stop_ownership(stop_id, user, db)
 
     # Auto-assign sort_index
     result = await db.execute(
@@ -123,7 +113,6 @@ async def update_activity(
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(activity, key, value)
-    activity.updated_at = datetime.utcnow()
 
     await db.commit()
     # Re-load with photos
@@ -157,10 +146,8 @@ async def delete_activity(
         .order_by(Activity.sort_index)
     )
     remaining = result.scalars().all()
-    now = datetime.utcnow()
     for i, a in enumerate(remaining):
         a.sort_index = i
-        a.updated_at = now
 
     await db.commit()
 
@@ -171,23 +158,13 @@ async def get_activity(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _verify_activity_ownership(activity_id, user, db)
     result = await db.execute(
         select(Activity)
         .options(selectinload(Activity.photos))
         .where(Activity.id == activity_id)
     )
-    activity = result.scalars().first()
-    if not activity:
-        raise HTTPException(status_code=404, detail="Activity not found")
-
-    stop = await db.get(TripStop, activity.trip_stop_id)
-    if not stop:
-        raise HTTPException(status_code=404, detail="Activity not found")
-    trip = await db.get(Trip, stop.trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Activity not found")
-
-    return activity
+    return result.scalars().first()
 
 
 @router.post("/activities/{activity_id}/photos", response_model=list[ActivityPhotoResponse])

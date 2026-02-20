@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,17 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user
 from app.database import get_db
+from app.dependencies import verify_trip_ownership
 from app.models import Movement, Trip, User
 from app.schemas import MovementCreate, MovementResponse, MovementUpdate
 
 router = APIRouter(tags=["movements"])
-
-
-async def _verify_trip_ownership(trip_id: UUID, user: User, db: AsyncSession) -> Trip:
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
-    return trip
 
 
 async def _verify_movement_ownership(movement_id: UUID, user: User, db: AsyncSession) -> Movement:
@@ -36,7 +29,7 @@ async def list_movements(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _verify_trip_ownership(trip_id, user, db)
+    await verify_trip_ownership(trip_id, user, db)
     result = await db.execute(
         select(Movement).where(Movement.trip_id == trip_id)
     )
@@ -50,7 +43,7 @@ async def upsert_movement(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _verify_trip_ownership(trip_id, user, db)
+    await verify_trip_ownership(trip_id, user, db)
 
     # Check for existing movement with same from/to stops
     result = await db.execute(
@@ -71,7 +64,6 @@ async def upsert_movement(
         existing.booking_ref = data.booking_ref
         existing.notes = data.notes
         existing.price = data.price
-        existing.updated_at = datetime.utcnow()
         await db.commit()
         await db.refresh(existing)
         return existing
@@ -108,7 +100,6 @@ async def update_movement(
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(movement, key, value)
-    movement.updated_at = datetime.utcnow()
 
     await db.commit()
     await db.refresh(movement)

@@ -8,24 +8,12 @@ import VersionsPanel from '../components/VersionsPanel'
 import DeleteConfirm from '../components/TripsPanel/DeleteConfirm'
 import { useTrips } from '../hooks/useTrips'
 import { useItinerary } from '../hooks/useItinerary'
+import { useToast } from '../hooks/useToast'
 import { apiAdapter } from '../data/adapters/apiAdapter'
 import { countries } from '../data/static/countries'
 import { CURRENCY_OPTIONS } from '../utils/currency'
+import { formatDateShort, formatDateFull } from '../utils/date'
 import './TripDetail.css'
-
-function formatDateShort(dateStr) {
-  if (!dateStr) return null
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric',
-  })
-}
-
-function formatDateFull(dateStr) {
-  if (!dateStr) return null
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-  })
-}
 
 export default function TripDetail() {
   const { id } = useParams()
@@ -72,7 +60,7 @@ export default function TripDetail() {
   const [showDelete, setShowDelete] = useState(false)
   const [showCitySearch, setShowCitySearch] = useState(false)
   const [showItinerary, setShowItinerary] = useState(false)
-  const [toast, setToast] = useState(null)
+  const { toast, showToast } = useToast()
   const [sharePopup, setSharePopup] = useState(null)
   const [shareLoading, setShareLoading] = useState(false)
   const [showAiPrompt, setShowAiPrompt] = useState(false)
@@ -209,11 +197,6 @@ export default function TripDetail() {
     if (result?.movementsCleared) {
       showToast('Transport segments cleared — re-add them for the new order')
     }
-  }
-
-  function showToast(message) {
-    setToast(message)
-    setTimeout(() => setToast(null), 3000)
   }
 
   async function handleShare() {

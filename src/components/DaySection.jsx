@@ -2,31 +2,10 @@ import { useState } from 'react'
 import ActivityItem from './ActivityItem'
 import StopControls from './StopControls'
 import { formatPrice } from '../utils/currency'
+import { formatDateWithDay } from '../utils/date'
+import { formatDuration } from '../utils/time'
+import { TRANSPORT_TYPES } from '../data/static/transportTypes'
 import './DaySection.css'
-
-const TRANSPORT_TYPES = [
-  { value: 'train', label: 'Train', icon: '🚆' },
-  { value: 'car', label: 'Car', icon: '🚗' },
-  { value: 'plane', label: 'Plane', icon: '✈️' },
-  { value: 'bus', label: 'Bus', icon: '🚌' },
-  { value: 'ferry', label: 'Ferry', icon: '⛴️' },
-  { value: 'walk', label: 'Walk', icon: '🚶' },
-  { value: 'other', label: 'Other', icon: '📍' },
-]
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-}
-
-function formatDuration(mins) {
-  if (!mins) return ''
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  if (h === 0) return `${m}m`
-  if (m === 0) return `${h}h`
-  return `${h}h${m}m`
-}
 
 export default function DaySection({ day, tripId, currency, onAddActivity, onUpdateActivity, onRemoveActivity, onReorderActivity, onMoveUp, onMoveDown, onRemoveStop, onUpdateNights, onUpdateStopPrice, onAddMovement, onUpdateMovement, onRemoveMovement }) {
   const [movementForm, setMovementForm] = useState(null)
@@ -46,7 +25,7 @@ export default function DaySection({ day, tripId, currency, onAddActivity, onUpd
     <div className="day-section" data-testid="day-section">
       <div className="day-header">
         <span className="day-number" data-testid="day-number">Day {day.dayNumber}</span>
-        <span className="day-date">{formatDate(day.date)}</span>
+        <span className="day-date">{formatDateWithDay(day.date)}</span>
         <span className="day-city">{day.stopName}</span>
       </div>
 

@@ -8,7 +8,8 @@ from sqlalchemy.orm import selectinload
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Activity, ActivityPhoto, Movement, Trip, TripStop, TripVersion, User
+from app.dependencies import verify_trip_ownership
+from app.models import Activity, ActivityPhoto, Movement, TripStop, TripVersion, User
 from app.schemas import (
     VersionCreate,
     VersionDetailResponse,
@@ -138,9 +139,7 @@ async def create_version(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    await verify_trip_ownership(trip_id, user, db)
 
     # Auto-increment version_number
     result = await db.execute(
@@ -170,9 +169,7 @@ async def list_versions(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    await verify_trip_ownership(trip_id, user, db)
 
     result = await db.execute(
         select(TripVersion)
@@ -189,9 +186,7 @@ async def get_version(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    await verify_trip_ownership(trip_id, user, db)
 
     version = await db.get(TripVersion, version_id)
     if not version or version.trip_id != trip_id:
@@ -208,9 +203,7 @@ async def restore_version(
     db: AsyncSession = Depends(get_db),
 ):
     """Destructive restore: replaces current trip stops/activities/movements with snapshot data."""
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    await verify_trip_ownership(trip_id, user, db)
 
     version = await db.get(TripVersion, version_id)
     if not version or version.trip_id != trip_id:
@@ -326,9 +319,7 @@ async def delete_version(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    await verify_trip_ownership(trip_id, user, db)
 
     version = await db.get(TripVersion, version_id)
     if not version or version.trip_id != trip_id:

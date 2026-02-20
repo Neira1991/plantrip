@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
-import './Auth.css'
+import { validatePassword } from '../utils/validation'
+import AuthLayout from '../components/AuthLayout'
 
 export default function Register() {
   const [email, setEmail] = useState('')
@@ -17,12 +18,9 @@ export default function Register() {
     e.preventDefault()
     setLocalError('')
 
-    if (password !== confirmPassword) {
-      setLocalError('Passwords do not match')
-      return
-    }
-    if (password.length < 6) {
-      setLocalError('Password must be at least 6 characters')
+    const pwError = validatePassword(password, confirmPassword)
+    if (pwError) {
+      setLocalError(pwError)
       return
     }
 
@@ -37,67 +35,62 @@ export default function Register() {
   const displayError = localError || error
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h1 className="auth-title">
-          plan<span>trip</span>
-        </h1>
-        <p className="auth-subtitle">Create your account</p>
+    <AuthLayout>
+      <p className="auth-subtitle">Create your account</p>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          {displayError && <div className="auth-error" data-testid="auth-error">{displayError}</div>}
+      <form className="auth-form" onSubmit={handleSubmit}>
+        {displayError && <div className="auth-error" data-testid="auth-error">{displayError}</div>}
 
-          <div className="auth-field">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              data-testid="auth-email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); clearError(); setLocalError('') }}
-              required
-              autoFocus
-            />
-          </div>
+        <div className="auth-field">
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            data-testid="auth-email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); clearError(); setLocalError('') }}
+            required
+            autoFocus
+          />
+        </div>
 
-          <div className="auth-field">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              data-testid="auth-password"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); clearError(); setLocalError('') }}
-              required
-            />
-          </div>
+        <div className="auth-field">
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            data-testid="auth-password"
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); clearError(); setLocalError('') }}
+            required
+          />
+        </div>
 
-          <div className="auth-field">
-            <label htmlFor="confirm-password">Confirm password</label>
-            <input
-              id="confirm-password"
-              type="password"
-              data-testid="auth-confirm-password"
-              value={confirmPassword}
-              onChange={(e) => { setConfirmPassword(e.target.value); clearError(); setLocalError('') }}
-              required
-            />
-          </div>
+        <div className="auth-field">
+          <label htmlFor="confirm-password">Confirm password</label>
+          <input
+            id="confirm-password"
+            type="password"
+            data-testid="auth-confirm-password"
+            value={confirmPassword}
+            onChange={(e) => { setConfirmPassword(e.target.value); clearError(); setLocalError('') }}
+            required
+          />
+        </div>
 
-          <button
-            type="submit"
-            className="auth-submit"
-            data-testid="auth-submit"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Creating account...' : 'Create account'}
-          </button>
-        </form>
+        <button
+          type="submit"
+          className="auth-submit"
+          data-testid="auth-submit"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Creating account...' : 'Create account'}
+        </button>
+      </form>
 
-        <p className="auth-link">
-          Already have an account? <Link to="/login">Sign in</Link>
-        </p>
-      </div>
-    </div>
+      <p className="auth-link">
+        Already have an account? <Link to="/login">Sign in</Link>
+      </p>
+    </AuthLayout>
   )
 }

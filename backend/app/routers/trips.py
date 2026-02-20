@@ -1,14 +1,13 @@
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Activity, Movement, OrganizationMember, Trip, TripStop, User
+from app.dependencies import load_itinerary, verify_trip_ownership
+from app.models import Trip, User
 from app.permissions import get_org_membership
 from app.routers.stops import recalculate_end_date
 from app.schemas import (
@@ -86,9 +85,7 @@ async def get_trip(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    trip = await verify_trip_ownership(trip_id, user, db)
     return trip
 
 
@@ -99,15 +96,12 @@ async def update_trip(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    trip = await verify_trip_ownership(trip_id, user, db)
 
     update_data = data.model_dump(exclude_unset=True)
     start_date_changed = "start_date" in update_data
     for key, value in update_data.items():
         setattr(trip, key, value)
-    trip.updated_at = datetime.utcnow()
 
     if start_date_changed:
         await db.flush()
@@ -124,10 +118,7 @@ async def delete_trip(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
+    trip = await verify_trip_ownership(trip_id, user, db)
     await db.delete(trip)
     await db.commit()
 
@@ -138,51 +129,18 @@ async def get_itinerary(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    trip = await verify_trip_ownership(trip_id, user, db)
 
-    # Load stops sorted by sort_index
-    stops_result = await db.execute(
-        select(TripStop)
-        .where(TripStop.trip_id == trip_id)
-        .order_by(TripStop.sort_index)
-    )
-    stops = stops_result.scalars().all()
+    stops, movements, all_activities, movement_by_from, activities_by_stop = await load_itinerary(trip_id, db)
 
-    # Load all movements for this trip
-    movements_result = await db.execute(
-        select(Movement).where(Movement.trip_id == trip_id)
-    )
-    movements = movements_result.scalars().all()
-    movement_by_from = {m.from_stop_id: m for m in movements}
-
-    # Load all activities for stops in this trip (with photos)
-    stop_ids = [s.id for s in stops]
-    if stop_ids:
-        activities_result = await db.execute(
-            select(Activity)
-            .options(selectinload(Activity.photos))
-            .where(Activity.trip_stop_id.in_(stop_ids))
-            .order_by(Activity.sort_index)
+    itinerary_stops = [
+        ItineraryStopResponse(
+            stop=stop,
+            activities=activities_by_stop.get(stop.id, []),
+            movement_to_next=movement_by_from.get(stop.id),
         )
-        all_activities = activities_result.scalars().all()
-    else:
-        all_activities = []
-
-    activities_by_stop: dict[UUID, list] = {}
-    for a in all_activities:
-        activities_by_stop.setdefault(a.trip_stop_id, []).append(a)
-
-    itinerary_stops = []
-    for stop in stops:
-        itinerary_stops.append(
-            ItineraryStopResponse(
-                stop=stop,
-                activities=activities_by_stop.get(stop.id, []),
-                movement_to_next=movement_by_from.get(stop.id),
-            )
-        )
+        for stop in stops
+    ]
 
     budget = compute_budget(stops, all_activities, movements)
     return ItineraryResponse(trip=trip, stops=itinerary_stops, budget=budget)

@@ -1,12 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { apiAdapter } from '../data/adapters/apiAdapter'
+import { useEscapeKey } from '../hooks/useEscapeKey'
+import { formatDateTime } from '../utils/date'
 import './FeedbackPanel.css'
-
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-}
 
 export default function FeedbackPanel({ isOpen, onClose, tripId }) {
   const [versionGroups, setVersionGroups] = useState([])
@@ -30,13 +26,7 @@ export default function FeedbackPanel({ isOpen, onClose, tripId }) {
     if (isOpen) loadFeedback()
   }, [isOpen, loadFeedback])
 
-  useEffect(() => {
-    function handleEscape(e) {
-      if (e.key === 'Escape' && isOpen) onClose()
-    }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen, onClose])
+  useEscapeKey(onClose, isOpen)
 
   const totalFeedback = versionGroups.reduce(
     (sum, vg) => sum + vg.activities.reduce((s, g) => s + g.feedback.length, 0),
@@ -122,7 +112,7 @@ export default function FeedbackPanel({ isOpen, onClose, tripId }) {
                         <div className="feedback-item-body">
                           <div className="feedback-item-meta">
                             <span className="feedback-item-name">{f.viewerName || 'Anonymous'}</span>
-                            <span className="feedback-item-date">{formatDate(f.createdAt)}</span>
+                            <span className="feedback-item-date">{formatDateTime(f.createdAt)}</span>
                           </div>
                           {f.message && <p className="feedback-item-message">{f.message}</p>}
                         </div>

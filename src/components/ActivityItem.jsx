@@ -1,24 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatPrice } from '../utils/currency'
+import { formatTime, formatDuration } from '../utils/time'
 import './ActivityItem.css'
-
-function formatTime(timeStr) {
-  if (!timeStr) return null
-  const [h, m] = timeStr.split(':')
-  const hour = parseInt(h)
-  const ampm = hour >= 12 ? 'PM' : 'AM'
-  const h12 = hour % 12 || 12
-  return `${h12}:${m} ${ampm}`
-}
-
-function formatDuration(minutes) {
-  if (!minutes) return null
-  if (minutes < 60) return `${minutes}m`
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  return m ? `${h}h${m}m` : `${h}h`
-}
 
 export default function ActivityItem({ activity, onUpdate, onRemove, onDelete, tripId, currency }) {
   const navigate = useNavigate()

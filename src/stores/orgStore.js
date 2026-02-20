@@ -1,56 +1,17 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
+import { apiAdapter } from '../data/adapters/apiAdapter'
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api'
-
-function toCamel(str) {
-  return str.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
-}
-
-function toSnake(str) {
-  return str.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`)
-}
-
-function camelizeKeys(obj) {
-  if (Array.isArray(obj)) return obj.map(camelizeKeys)
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([k, v]) => [toCamel(k), camelizeKeys(v)])
-    )
+async function withLoading(set, asyncFn) {
+  set({ isLoading: true, error: null })
+  try {
+    const result = await asyncFn()
+    set({ isLoading: false })
+    return result
+  } catch (error) {
+    set({ error: error.message, isLoading: false })
+    throw error
   }
-  return obj
-}
-
-function snakifyKeys(obj) {
-  if (Array.isArray(obj)) return obj.map(snakifyKeys)
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([k, v]) => [toSnake(k), snakifyKeys(v)])
-    )
-  }
-  return obj
-}
-
-async function request(path, options = {}) {
-  const url = `${BASE_URL}${path}`
-  const config = {
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    ...options,
-  }
-
-  const response = await fetch(url, config)
-
-  if (response.status === 204) {
-    return null
-  }
-
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}))
-    throw new Error(body.detail || `Request failed: ${response.status}`)
-  }
-
-  return response.json()
 }
 
 export const useOrgStore = create(
@@ -65,209 +26,121 @@ export const useOrgStore = create(
       error: null,
 
       loadOrganization: async () => {
-        set({ isLoading: true, error: null })
-        try {
-          const data = await request('/org')
-          set({
-            organization: camelizeKeys(data),
-            isLoading: false
-          })
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-        }
+        await withLoading(set, async () => {
+          const data = await apiAdapter.get('/org')
+          set({ organization: data })
+        }).catch(() => {})
       },
 
       createOrganization: async (name) => {
-        set({ isLoading: true, error: null })
-        try {
-          const data = await request('/org', {
-            method: 'POST',
-            body: JSON.stringify({ name }),
-          })
-          set({
-            organization: camelizeKeys(data),
-            isLoading: false
-          })
-          return camelizeKeys(data)
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-          throw error
-        }
+        return withLoading(set, async () => {
+          const data = await apiAdapter.post('/org', { name })
+          set({ organization: data })
+          return data
+        })
       },
 
       updateOrganization: async (updates) => {
-        set({ isLoading: true, error: null })
-        try {
-          const data = await request('/org', {
-            method: 'PUT',
-            body: JSON.stringify(snakifyKeys(updates)),
-          })
-          set({
-            organization: camelizeKeys(data),
-            isLoading: false
-          })
-          return camelizeKeys(data)
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-          throw error
-        }
+        return withLoading(set, async () => {
+          const data = await apiAdapter.put('/org', updates)
+          set({ organization: data })
+          return data
+        })
       },
 
       deleteOrganization: async () => {
-        set({ isLoading: true, error: null })
-        try {
-          await request('/org', { method: 'DELETE' })
+        return withLoading(set, async () => {
+          await apiAdapter.del('/org')
           set({
             organization: null,
             members: [],
             invites: [],
             orgTrips: [],
             stats: null,
-            isLoading: false
           })
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-          throw error
-        }
+        })
       },
 
       loadMembers: async () => {
-        set({ isLoading: true, error: null })
-        try {
-          const data = await request('/org/members')
-          set({
-            members: camelizeKeys(data),
-            isLoading: false
-          })
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-        }
+        await withLoading(set, async () => {
+          const data = await apiAdapter.get('/org/members')
+          set({ members: data })
+        }).catch(() => {})
       },
 
       inviteMember: async (email, role) => {
-        set({ isLoading: true, error: null })
-        try {
-          const data = await request('/org/invites', {
-            method: 'POST',
-            body: JSON.stringify({ email, role }),
-          })
-          const invite = camelizeKeys(data)
+        return withLoading(set, async () => {
+          const invite = await apiAdapter.post('/org/invites', { email, role })
           set((state) => ({
             invites: [...state.invites, invite],
-            isLoading: false
           }))
           return invite
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-          throw error
-        }
+        })
       },
 
       removeMember: async (userId) => {
-        set({ isLoading: true, error: null })
-        try {
-          await request(`/org/members/${userId}`, { method: 'DELETE' })
+        return withLoading(set, async () => {
+          await apiAdapter.del(`/org/members/${userId}`)
           set((state) => ({
             members: state.members.filter(m => m.id !== userId),
-            isLoading: false
           }))
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-          throw error
-        }
+        })
       },
 
       updateMemberRole: async (userId, role) => {
-        set({ isLoading: true, error: null })
-        try {
-          const data = await request(`/org/members/${userId}/role`, {
-            method: 'PUT',
-            body: JSON.stringify({ role }),
-          })
-          const updated = camelizeKeys(data)
+        return withLoading(set, async () => {
+          const updated = await apiAdapter.put(`/org/members/${userId}/role`, { role })
           set((state) => ({
             members: state.members.map(m => m.id === userId ? updated : m),
-            isLoading: false
           }))
           return updated
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-          throw error
-        }
+        })
       },
 
       revokeInvite: async (inviteId) => {
-        set({ isLoading: true, error: null })
-        try {
-          await request(`/org/invites/${inviteId}`, { method: 'DELETE' })
+        return withLoading(set, async () => {
+          await apiAdapter.del(`/org/invites/${inviteId}`)
           set((state) => ({
             invites: state.invites.filter(i => i.id !== inviteId),
-            isLoading: false
           }))
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-          throw error
-        }
+        })
       },
 
       loadOrgTrips: async () => {
-        set({ isLoading: true, error: null })
-        try {
-          const data = await request('/org/trips')
-          set({
-            orgTrips: camelizeKeys(data),
-            isLoading: false
-          })
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-        }
+        await withLoading(set, async () => {
+          const data = await apiAdapter.get('/org/trips')
+          set({ orgTrips: data })
+        }).catch(() => {})
       },
 
       loadStats: async () => {
-        set({ isLoading: true, error: null })
-        try {
-          const data = await request('/org/stats')
-          set({
-            stats: camelizeKeys(data),
-            isLoading: false
-          })
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-        }
+        await withLoading(set, async () => {
+          const data = await apiAdapter.get('/org/stats')
+          set({ stats: data })
+        }).catch(() => {})
       },
 
       loadInvites: async () => {
-        set({ isLoading: true, error: null })
-        try {
-          const data = await request('/org/invites')
-          set({
-            invites: camelizeKeys(data),
-            isLoading: false
-          })
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-        }
+        await withLoading(set, async () => {
+          const data = await apiAdapter.get('/org/invites')
+          set({ invites: data })
+        }).catch(() => {})
       },
 
       leaveOrganization: async () => {
         const { organization } = get()
         if (!organization) return
 
-        set({ isLoading: true, error: null })
-        try {
-          await request('/org/leave', { method: 'DELETE' })
+        return withLoading(set, async () => {
+          await apiAdapter.del('/org/leave')
           set({
             organization: null,
             members: [],
             invites: [],
             orgTrips: [],
             stats: null,
-            isLoading: false
           })
-        } catch (error) {
-          set({ error: error.message, isLoading: false })
-          throw error
-        }
+        })
       },
 
       clearError: () => set({ error: null }),

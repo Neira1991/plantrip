@@ -1,15 +1,6 @@
 import CountryShape from '../CountryShape'
 import { countries } from '../../data/static/countries'
-
-function formatDateRange(start, end) {
-  if (!start) return null
-  const opts = { month: 'short', day: 'numeric', year: 'numeric' }
-  const s = new Date(start + 'T00:00:00').toLocaleDateString('en-US', opts)
-  if (!end) return s
-  const endOpts = { month: 'short', day: 'numeric', year: 'numeric' }
-  const e = new Date(end + 'T00:00:00').toLocaleDateString('en-US', endOpts)
-  return `${s} – ${e}`
-}
+import { formatDateRange } from '../../utils/date'
 
 export default function TripCard({ trip, onClick }) {
   const country = countries.find(c => c.code === trip.countryCode)

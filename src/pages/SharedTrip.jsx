@@ -2,72 +2,13 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import MapboxMap from '../components/MapboxMap'
 import SharedDaySection from '../components/SharedDaySection'
+import BudgetSummary from '../components/BudgetSummary'
+import { useAsyncLoad } from '../hooks/useAsyncLoad'
 import { apiAdapter } from '../data/adapters/apiAdapter'
 import { countries } from '../data/static/countries'
-import { formatPrice } from '../utils/currency'
+import { formatDateShort } from '../utils/date'
+import { buildTimeline, normalizeNested } from '../utils/timeline'
 import './SharedTrip.css'
-
-function buildTimeline(data) {
-  if (!data.startDate || data.stops.length === 0) return []
-
-  const sorted = [...data.stops].sort((a, b) => a.stop.sortIndex - b.stop.sortIndex)
-  const movementByFrom = {}
-  for (const entry of sorted) {
-    if (entry.movementToNext) {
-      movementByFrom[entry.stop.id] = entry.movementToNext
-    }
-  }
-
-  const actByKey = {}
-  for (const entry of sorted) {
-    for (const a of entry.activities) {
-      const key = `${entry.stop.id}|${a.date || 'none'}`
-      ;(actByKey[key] ??= []).push(a)
-    }
-  }
-  for (const arr of Object.values(actByKey)) {
-    arr.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || '') || a.sortIndex - b.sortIndex)
-  }
-
-  const days = []
-  let dayNum = 1
-  const start = new Date(data.startDate + 'T00:00:00')
-
-  for (let si = 0; si < sorted.length; si++) {
-    const stop = sorted[si].stop
-    for (let n = 0; n < stop.nights; n++) {
-      const d = new Date(start)
-      d.setDate(start.getDate() + dayNum - 1)
-      const dateStr = d.toISOString().split('T')[0]
-      const isFirst = n === 0
-      const isLast = n === stop.nights - 1
-
-      days.push({
-        dayNumber: dayNum,
-        date: dateStr,
-        stopId: stop.id,
-        stopName: stop.name,
-        stopLng: stop.lng,
-        stopLat: stop.lat,
-        stopSortIndex: stop.sortIndex,
-        nights: stop.nights,
-        pricePerNight: stop.pricePerNight,
-        totalStops: sorted.length,
-        isFirstDayOfStop: isFirst,
-        isLastDayOfStop: isLast,
-        activities: [
-          ...(actByKey[`${stop.id}|${dateStr}`] || []),
-          ...(isFirst ? (actByKey[`${stop.id}|none`] || []) : []),
-        ],
-        movementAfter: isLast && si < sorted.length - 1
-          ? { movement: movementByFrom[stop.id] || null, fromStop: stop }
-          : null,
-      })
-      dayNum++
-    }
-  }
-  return days
-}
 
 function formatExpiryCountdown(expiresAt) {
   const now = new Date()
@@ -82,13 +23,6 @@ function formatExpiryCountdown(expiresAt) {
   return `Expires in ${minutes}m`
 }
 
-function formatDateShort(dateStr) {
-  if (!dateStr) return null
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric',
-  })
-}
-
 function getViewerSessionId() {
   let id = localStorage.getItem('plantrip_viewer_session_id')
   if (!id) {
@@ -100,9 +34,7 @@ function getViewerSessionId() {
 
 export default function SharedTrip() {
   const { token } = useParams()
-  const [data, setData] = useState(null)
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { data, loading, error } = useAsyncLoad(() => apiAdapter.get(`/shared/${token}`), [token])
   const [countdown, setCountdown] = useState('')
   const [feedbackMode, setFeedbackMode] = useState(false)
   const [viewerName, setViewerName] = useState(() => localStorage.getItem('plantrip_viewer_name') || '')
@@ -117,30 +49,10 @@ export default function SharedTrip() {
     return () => document.head.removeChild(meta)
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
-    async function fetchShared() {
-      try {
-        const result = await apiAdapter.get(`/shared/${token}`)
-        if (!cancelled) {
-          setData(result)
-          setCountdown(formatExpiryCountdown(result.expiresAt))
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err.message || 'This share link is invalid or has expired')
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    fetchShared()
-    return () => { cancelled = true }
-  }, [token])
-
-  // Update countdown every minute
+  // Update countdown immediately when data loads, then every minute
   useEffect(() => {
     if (!data?.expiresAt) return
+    setCountdown(formatExpiryCountdown(data.expiresAt))
     const interval = setInterval(() => {
       setCountdown(formatExpiryCountdown(data.expiresAt))
     }, 60000)
@@ -149,7 +61,7 @@ export default function SharedTrip() {
 
   const timeline = useMemo(() => {
     if (!data) return []
-    return buildTimeline(data)
+    return buildTimeline(normalizeNested(data))
   }, [data])
 
   const stops = useMemo(() => {
@@ -303,33 +215,7 @@ export default function SharedTrip() {
               </div>
             )}
 
-            {data.budget && data.budget.grandTotal > 0 && (
-              <div className="shared-budget-summary">
-                <h3 className="shared-budget-title">Budget</h3>
-                {data.budget.activitiesTotal > 0 && (
-                  <div className="shared-budget-row">
-                    <span>Activities</span>
-                    <span>{formatPrice(data.budget.activitiesTotal, data.currency)}</span>
-                  </div>
-                )}
-                {data.budget.accommodationTotal > 0 && (
-                  <div className="shared-budget-row">
-                    <span>Accommodation</span>
-                    <span>{formatPrice(data.budget.accommodationTotal, data.currency)}</span>
-                  </div>
-                )}
-                {data.budget.transportTotal > 0 && (
-                  <div className="shared-budget-row">
-                    <span>Transport</span>
-                    <span>{formatPrice(data.budget.transportTotal, data.currency)}</span>
-                  </div>
-                )}
-                <div className="shared-budget-row shared-budget-total">
-                  <span>Total</span>
-                  <span>{formatPrice(data.budget.grandTotal, data.currency)}</span>
-                </div>
-              </div>
-            )}
+            <BudgetSummary budget={data.budget} currency={data.currency} className="shared-budget-summary" />
           </div>
         </div>
       </div>

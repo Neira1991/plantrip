@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user
 from app.database import get_db
+from app.dependencies import verify_stop_ownership, verify_trip_ownership
 from app.models import Activity, Movement, Trip, TripStop, User
 from app.schemas import TripStopCreate, TripStopReorder, TripStopResponse, TripStopUpdate
 
@@ -22,24 +23,6 @@ async def recalculate_end_date(trip_id: UUID, db: AsyncSession) -> None:
         .where(TripStop.trip_id == trip_id)
     )).scalar()
     trip.end_date = trip.start_date + timedelta(days=max(total_nights - 1, 0))
-    trip.updated_at = datetime.utcnow()
-
-
-async def _verify_trip_ownership(trip_id: UUID, user: User, db: AsyncSession) -> Trip:
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
-    return trip
-
-
-async def _verify_stop_ownership(stop_id: UUID, user: User, db: AsyncSession) -> TripStop:
-    stop = await db.get(TripStop, stop_id)
-    if not stop:
-        raise HTTPException(status_code=404, detail="Stop not found")
-    trip = await db.get(Trip, stop.trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Stop not found")
-    return stop
 
 
 @router.get("/trips/{trip_id}/stops", response_model=list[TripStopResponse])
@@ -48,7 +31,7 @@ async def list_stops(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _verify_trip_ownership(trip_id, user, db)
+    await verify_trip_ownership(trip_id, user, db)
     result = await db.execute(
         select(TripStop)
         .where(TripStop.trip_id == trip_id)
@@ -64,7 +47,7 @@ async def create_stop(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _verify_trip_ownership(trip_id, user, db)
+    await verify_trip_ownership(trip_id, user, db)
 
     # Auto-assign sort_index
     result = await db.execute(
@@ -99,13 +82,12 @@ async def update_stop(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    stop = await _verify_stop_ownership(stop_id, user, db)
+    stop = await verify_stop_ownership(stop_id, user, db)
 
     update_data = data.model_dump(exclude_unset=True)
     nights_changed = "nights" in update_data
     for key, value in update_data.items():
         setattr(stop, key, value)
-    stop.updated_at = datetime.utcnow()
 
     if nights_changed:
         await db.flush()
@@ -122,7 +104,7 @@ async def delete_stop(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    stop = await _verify_stop_ownership(stop_id, user, db)
+    stop = await verify_stop_ownership(stop_id, user, db)
     trip_id = stop.trip_id
 
     # Delete activities for this stop
@@ -151,7 +133,6 @@ async def delete_stop(
     remaining = result.scalars().all()
     for i, s in enumerate(remaining):
         s.sort_index = i
-        s.updated_at = datetime.utcnow()
 
     await recalculate_end_date(trip_id, db)
     await db.commit()
@@ -164,7 +145,7 @@ async def reorder_stops(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _verify_trip_ownership(trip_id, user, db)
+    await verify_trip_ownership(trip_id, user, db)
 
     # Load all stops for this trip sorted by sort_index
     result = await db.execute(
@@ -185,10 +166,8 @@ async def reorder_stops(
     await db.execute(text("SET CONSTRAINTS uq_trip_stop_sort DEFERRED"))
 
     # Renumber 0, 1, 2...
-    now = datetime.utcnow()
     for i, stop in enumerate(stops):
         stop.sort_index = i
-        stop.updated_at = now
 
     # Delete ALL movements for this trip
     await db.execute(delete(Movement).where(Movement.trip_id == trip_id))

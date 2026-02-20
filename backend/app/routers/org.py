@@ -1,17 +1,15 @@
-import os
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user
 from app.database import get_db
+from app.dependencies import limiter
 from app.email import send_invite_email
 from app.models import Organization, OrganizationInvite, OrganizationMember, Trip, User
 from app.permissions import get_org_membership, require_org_admin, require_org_member
@@ -29,8 +27,6 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/org", tags=["organization"])
-_testing = os.environ.get("TESTING", "").lower() == "true"
-limiter = Limiter(key_func=get_remote_address, enabled=not _testing)
 
 
 def generate_slug(name: str) -> str:
@@ -73,6 +69,46 @@ async def ensure_unique_slug(base_slug: str, db: AsyncSession, exclude_id: UUID 
         slug = f"{base_slug[:44]}-{suffix}"
 
 
+async def build_org_response(org: Organization, db: AsyncSession) -> OrganizationResponse:
+    """Build an OrganizationResponse with member count."""
+    count_result = await db.execute(
+        select(func.count()).select_from(OrganizationMember).where(OrganizationMember.organization_id == org.id)
+    )
+    member_count = count_result.scalar() or 0
+    return OrganizationResponse(
+        id=org.id,
+        name=org.name,
+        slug=org.slug,
+        created_at=org.created_at,
+        updated_at=org.updated_at,
+        member_count=member_count,
+    )
+
+
+def _validate_invite(invite: OrganizationInvite) -> None:
+    """Validate that an invite is still usable (not expired, not accepted)."""
+    if invite.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invite has expired")
+    if invite.accepted_at is not None:
+        raise HTTPException(status_code=400, detail="Invite has already been accepted")
+
+
+async def _ensure_not_last_admin(org_id: UUID, db: AsyncSession, action: str = "demote") -> None:
+    """Raise 400 if there is only one admin left in the organization."""
+    admin_count_result = await db.execute(
+        select(func.count())
+        .select_from(OrganizationMember)
+        .where(
+            OrganizationMember.organization_id == org_id,
+            OrganizationMember.role == "admin",
+        )
+        .with_for_update()
+    )
+    admin_count = admin_count_result.scalar() or 0
+    if admin_count <= 1:
+        raise HTTPException(status_code=400, detail=f"Cannot {action} the last admin")
+
+
 # --- Organization CRUD ---
 
 @router.post("", response_model=OrganizationResponse, status_code=201)
@@ -108,20 +144,7 @@ async def create_organization(
     await db.commit()
     await db.refresh(org)
 
-    # Count members (should be 1)
-    count_result = await db.execute(
-        select(func.count()).select_from(OrganizationMember).where(OrganizationMember.organization_id == org.id)
-    )
-    member_count = count_result.scalar() or 0
-
-    return OrganizationResponse(
-        id=org.id,
-        name=org.name,
-        slug=org.slug,
-        created_at=org.created_at,
-        updated_at=org.updated_at,
-        member_count=member_count,
-    )
+    return await build_org_response(org, db)
 
 
 @router.get("", response_model=OrganizationResponse)
@@ -134,20 +157,7 @@ async def get_organization(
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Count members
-    count_result = await db.execute(
-        select(func.count()).select_from(OrganizationMember).where(OrganizationMember.organization_id == org.id)
-    )
-    member_count = count_result.scalar() or 0
-
-    return OrganizationResponse(
-        id=org.id,
-        name=org.name,
-        slug=org.slug,
-        created_at=org.created_at,
-        updated_at=org.updated_at,
-        member_count=member_count,
-    )
+    return await build_org_response(org, db)
 
 
 @router.put("", response_model=OrganizationResponse)
@@ -171,20 +181,7 @@ async def update_organization(
     await db.commit()
     await db.refresh(org)
 
-    # Count members
-    count_result = await db.execute(
-        select(func.count()).select_from(OrganizationMember).where(OrganizationMember.organization_id == org.id)
-    )
-    member_count = count_result.scalar() or 0
-
-    return OrganizationResponse(
-        id=org.id,
-        name=org.name,
-        slug=org.slug,
-        created_at=org.created_at,
-        updated_at=org.updated_at,
-        member_count=member_count,
-    )
+    return await build_org_response(org, db)
 
 
 @router.delete("", status_code=204)
@@ -269,20 +266,8 @@ async def update_member_role(
     target_member, user = member_user
 
     # If demoting from admin, check if they're the last admin
-    # Use SELECT FOR UPDATE to prevent race conditions
     if target_member.role == "admin" and data.role != "admin":
-        admin_count_result = await db.execute(
-            select(func.count())
-            .select_from(OrganizationMember)
-            .where(
-                OrganizationMember.organization_id == membership.organization_id,
-                OrganizationMember.role == "admin",
-            )
-            .with_for_update()
-        )
-        admin_count = admin_count_result.scalar() or 0
-        if admin_count <= 1:
-            raise HTTPException(status_code=400, detail="Cannot demote the last admin")
+        await _ensure_not_last_admin(membership.organization_id, db)
 
     target_member.role = data.role
     await db.commit()
@@ -342,20 +327,8 @@ async def remove_member(
         raise HTTPException(status_code=403, detail="You can only remove yourself or be an admin")
 
     # Check if removing last admin
-    # Use SELECT FOR UPDATE to prevent race conditions
     if target_member.role == "admin":
-        admin_count_result = await db.execute(
-            select(func.count())
-            .select_from(OrganizationMember)
-            .where(
-                OrganizationMember.organization_id == membership.organization_id,
-                OrganizationMember.role == "admin",
-            )
-            .with_for_update()
-        )
-        admin_count = admin_count_result.scalar() or 0
-        if admin_count <= 1:
-            raise HTTPException(status_code=400, detail="Cannot remove the last admin")
+        await _ensure_not_last_admin(membership.organization_id, db, action="remove")
 
     await db.delete(target_member)
     await db.commit()
@@ -464,13 +437,7 @@ async def accept_invite(
     if not invite:
         raise HTTPException(status_code=404, detail="Invite not found")
 
-    # Check expiry
-    if invite.expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=400, detail="Invite has expired")
-
-    # Check if already accepted
-    if invite.accepted_at is not None:
-        raise HTTPException(status_code=400, detail="Invite has already been accepted")
+    _validate_invite(invite)
 
     # Check email match (case-insensitive)
     # Normalize both emails to lowercase for comparison
@@ -490,25 +457,11 @@ async def accept_invite(
 
     await db.commit()
 
-    # Get org
     org = await db.get(Organization, invite.organization_id)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Count members
-    count_result = await db.execute(
-        select(func.count()).select_from(OrganizationMember).where(OrganizationMember.organization_id == org.id)
-    )
-    member_count = count_result.scalar() or 0
-
-    return OrganizationResponse(
-        id=org.id,
-        name=org.name,
-        slug=org.slug,
-        created_at=org.created_at,
-        updated_at=org.updated_at,
-        member_count=member_count,
-    )
+    return await build_org_response(org, db)
 
 
 # --- Public Invite Info ---
@@ -528,10 +481,7 @@ async def get_invite_info(
     if not invite:
         raise HTTPException(status_code=404, detail="Invite not found")
 
-    if invite.expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=400, detail="Invite has expired")
-    if invite.accepted_at is not None:
-        raise HTTPException(status_code=400, detail="Invite has already been accepted")
+    _validate_invite(invite)
 
     org = await db.get(Organization, invite.organization_id)
     org_name = org.name if org else "Unknown"

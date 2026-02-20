@@ -1,30 +1,24 @@
-import os
-from datetime import datetime, time, timedelta
+from datetime import time, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-from sqlalchemy import delete, select, text
+from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.auth import get_current_user
 from app.config import settings
 from app.database import get_db
+from app.dependencies import TESTING, limiter, load_itinerary, verify_trip_ownership
 from app.models import Activity, Movement, Trip, TripStop, User
 from app.routers.stops import recalculate_end_date
 from app.routers.trips import compute_budget
 from app.schemas import (
-    BudgetSummary,
     ItineraryResponse,
     ItineraryStopResponse,
 )
 
 router = APIRouter(tags=["generate"])
-_testing = os.environ.get("TESTING", "").lower() == "true"
-limiter = Limiter(key_func=get_remote_address, enabled=not _testing)
 
 VALID_MOVEMENT_TYPES = {"train", "bus", "flight", "car", "ferry", "walk"}
 VALID_CATEGORIES = {
@@ -221,12 +215,10 @@ async def generate_itinerary(
     db: AsyncSession = Depends(get_db),
 ):
     # 1. Verify trip ownership
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    trip = await verify_trip_ownership(trip_id, user, db)
 
     # 2. Determine itinerary data
-    if _testing and data.prompt.startswith("__TEST__"):
+    if TESTING and data.prompt.startswith("__TEST__"):
         tool_input = _canned_itinerary()
     else:
         # Guard: API key required
@@ -398,45 +390,17 @@ async def generate_itinerary(
     # Reload trip
     await db.refresh(trip)
 
-    # Reload stops with activities (with photos) in order
-    stops_result = await db.execute(
-        select(TripStop)
-        .where(TripStop.trip_id == trip_id)
-        .order_by(TripStop.sort_index)
-    )
-    stops = stops_result.scalars().all()
+    # Reload full itinerary
+    stops, movements, all_activities, movement_by_from, activities_by_stop = await load_itinerary(trip_id, db)
 
-    movements_result = await db.execute(
-        select(Movement).where(Movement.trip_id == trip_id)
-    )
-    movements = movements_result.scalars().all()
-    movement_by_from = {m.from_stop_id: m for m in movements}
-
-    stop_ids = [s.id for s in stops]
-    if stop_ids:
-        activities_result = await db.execute(
-            select(Activity)
-            .options(selectinload(Activity.photos))
-            .where(Activity.trip_stop_id.in_(stop_ids))
-            .order_by(Activity.sort_index)
+    itinerary_stops = [
+        ItineraryStopResponse(
+            stop=stop,
+            activities=activities_by_stop.get(stop.id, []),
+            movement_to_next=movement_by_from.get(stop.id),
         )
-        reloaded_activities = activities_result.scalars().all()
-    else:
-        reloaded_activities = []
+        for stop in stops
+    ]
 
-    activities_by_stop = {}
-    for a in reloaded_activities:
-        activities_by_stop.setdefault(a.trip_stop_id, []).append(a)
-
-    itinerary_stops = []
-    for stop in stops:
-        itinerary_stops.append(
-            ItineraryStopResponse(
-                stop=stop,
-                activities=activities_by_stop.get(stop.id, []),
-                movement_to_next=movement_by_from.get(stop.id),
-            )
-        )
-
-    budget = compute_budget(stops, reloaded_activities, movements)
+    budget = compute_budget(stops, all_activities, movements)
     return ItineraryResponse(trip=trip, stops=itinerary_stops, budget=budget)

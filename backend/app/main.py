@@ -1,4 +1,3 @@
-import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -8,13 +7,13 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from app.database import create_tables
+from app.dependencies import TESTING
 from app.routers import activities, auth, feedback, generate, movements, org, password_reset, share, stops, trips, versions
 
-_testing = os.environ.get("TESTING", "").lower() == "true"
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["60/minute"],
-    enabled=not _testing,
+    enabled=not TESTING,
 )
 
 
@@ -48,7 +47,7 @@ app.include_router(password_reset.router, prefix="/api")
 app.include_router(feedback.router, prefix="/api")
 app.include_router(versions.router, prefix="/api")
 
-if os.environ.get("TESTING", "").lower() == "true":
+if TESTING:
     from app.routers import test_utils
     app.include_router(test_utils.router, prefix="/api")
 

@@ -1,63 +1,39 @@
-import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { apiAdapter } from '../data/adapters/apiAdapter'
-import './Auth.css'
+import { useAsyncLoad } from '../hooks/useAsyncLoad'
+import AuthLayout from '../components/AuthLayout'
 
 export default function VerifyEmail() {
   const { token } = useParams()
-  const [status, setStatus] = useState('verifying') // verifying | success | error
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    let cancelled = false
-    async function verify() {
-      try {
-        await apiAdapter.verifyEmail(token)
-        if (!cancelled) setStatus('success')
-      } catch (err) {
-        if (!cancelled) {
-          setStatus('error')
-          setError(err.message || 'Verification failed')
-        }
-      }
-    }
-    verify()
-    return () => { cancelled = true }
-  }, [token])
+  const { loading, error } = useAsyncLoad(() => apiAdapter.verifyEmail(token), [token])
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h1 className="auth-title">
-          plan<span>trip</span>
-        </h1>
+    <AuthLayout>
+      {loading && (
+        <p className="auth-subtitle">Verifying your email...</p>
+      )}
 
-        {status === 'verifying' && (
-          <p className="auth-subtitle">Verifying your email...</p>
-        )}
+      {!loading && !error && (
+        <>
+          <p className="auth-subtitle">Email verified!</p>
+          <p style={{ color: '#aaa', fontSize: '0.9rem', textAlign: 'center', lineHeight: 1.6 }}>
+            Your email has been verified. You're all set.
+          </p>
+          <p className="auth-link" style={{ marginTop: 24 }}>
+            <Link to="/">Go to dashboard</Link>
+          </p>
+        </>
+      )}
 
-        {status === 'success' && (
-          <>
-            <p className="auth-subtitle">Email verified!</p>
-            <p style={{ color: '#aaa', fontSize: '0.9rem', textAlign: 'center', lineHeight: 1.6 }}>
-              Your email has been verified. You're all set.
-            </p>
-            <p className="auth-link" style={{ marginTop: 24 }}>
-              <Link to="/">Go to dashboard</Link>
-            </p>
-          </>
-        )}
-
-        {status === 'error' && (
-          <>
-            <p className="auth-subtitle">Verification failed</p>
-            <div className="auth-error" style={{ textAlign: 'center' }}>{error}</div>
-            <p className="auth-link" style={{ marginTop: 24 }}>
-              <Link to="/">Go to dashboard</Link>
-            </p>
-          </>
-        )}
-      </div>
-    </div>
+      {!loading && error && (
+        <>
+          <p className="auth-subtitle">Verification failed</p>
+          <div className="auth-error" style={{ textAlign: 'center' }}>{error}</div>
+          <p className="auth-link" style={{ marginTop: 24 }}>
+            <Link to="/">Go to dashboard</Link>
+          </p>
+        </>
+      )}
+    </AuthLayout>
   )
 }

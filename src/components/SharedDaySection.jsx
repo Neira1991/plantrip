@@ -1,47 +1,17 @@
 import { useState } from 'react'
 import PhotoGallery from './PhotoGallery'
 import { formatPrice } from '../utils/currency'
+import { formatDateWithDay } from '../utils/date'
+import { formatTime, formatDuration } from '../utils/time'
+import { TRANSPORT_MAP } from '../data/static/transportTypes'
 import './SharedDaySection.css'
-
-const TRANSPORT_TYPES = {
-  train: { label: 'Train', icon: '\u{1F686}' },
-  car: { label: 'Car', icon: '\u{1F697}' },
-  plane: { label: 'Plane', icon: '\u2708\uFE0F' },
-  bus: { label: 'Bus', icon: '\u{1F68C}' },
-  ferry: { label: 'Ferry', icon: '\u26F4\uFE0F' },
-  walk: { label: 'Walk', icon: '\u{1F6B6}' },
-  other: { label: 'Other', icon: '\u{1F4CD}' },
-}
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-}
-
-function formatTime(timeStr) {
-  if (!timeStr) return null
-  const [h, m] = timeStr.split(':')
-  const hour = parseInt(h)
-  const ampm = hour >= 12 ? 'PM' : 'AM'
-  const h12 = hour % 12 || 12
-  return `${h12}:${m} ${ampm}`
-}
-
-function formatDuration(mins) {
-  if (!mins) return ''
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  if (h === 0) return `${m}m`
-  if (m === 0) return `${h}h`
-  return `${h}h${m}m`
-}
 
 export default function SharedDaySection({ day, currency, feedbackMode, feedbackByActivity, feedbackSubmitting, onFeedback }) {
   return (
     <div className="shared-day-section">
       <div className="shared-day-header">
         <span className="shared-day-number">Day {day.dayNumber}</span>
-        <span className="shared-day-date">{formatDate(day.date)}</span>
+        <span className="shared-day-date">{formatDateWithDay(day.date)}</span>
         <span className="shared-day-city">{day.stopName}</span>
       </div>
 
@@ -66,10 +36,10 @@ export default function SharedDaySection({ day, currency, feedbackMode, feedback
           <div className="shared-movement-line" />
           <div className="shared-movement-summary">
             <span className="shared-movement-icon">
-              {TRANSPORT_TYPES[day.movementAfter.movement.type]?.icon || '\u{1F4CD}'}
+              {TRANSPORT_MAP[day.movementAfter.movement.type]?.icon || '\u{1F4CD}'}
             </span>
             <span className="shared-movement-label">
-              {TRANSPORT_TYPES[day.movementAfter.movement.type]?.label || day.movementAfter.movement.type}
+              {TRANSPORT_MAP[day.movementAfter.movement.type]?.label || day.movementAfter.movement.type}
               {day.movementAfter.movement.carrier ? ` \u00B7 ${day.movementAfter.movement.carrier}` : ''}
               {day.movementAfter.movement.durationMinutes ? ` \u00B7 ${formatDuration(day.movementAfter.movement.durationMinutes)}` : ''}
             </span>

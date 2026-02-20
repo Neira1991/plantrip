@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 import './CityAutocomplete.css'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
@@ -14,13 +15,7 @@ export default function CityAutocomplete({ countryCode, onSelect, onClose }) {
     inputRef.current?.focus()
   }, [])
 
-  useEffect(() => {
-    function handleEscape(e) {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [onClose])
+  useEscapeKey(onClose)
 
   const search = useCallback(async (q) => {
     if (!q.trim() || !MAPBOX_TOKEN) {

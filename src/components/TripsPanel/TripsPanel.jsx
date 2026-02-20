@@ -1,6 +1,7 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrips } from '../../hooks/useTrips'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import TripsList from './TripsList'
 import './TripsPanel.css'
 
@@ -9,13 +10,7 @@ export default function TripsPanel({ isOpen, onClose }) {
   const panelRef = useRef(null)
   const navigate = useNavigate()
 
-  useEffect(() => {
-    function handleEscape(e) {
-      if (e.key === 'Escape' && isOpen) onClose()
-    }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen, onClose])
+  useEscapeKey(onClose, isOpen)
 
   const handleSelect = useCallback((trip) => {
     onClose()

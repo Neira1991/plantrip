@@ -1,17 +1,15 @@
-import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Activity, Movement, ShareToken, Trip, TripStop, User
+from app.dependencies import limiter, load_itinerary, verify_trip_ownership
+from app.models import ShareToken, Trip, User
 from app.routers.trips import compute_budget
 from app.schemas import (
     ItineraryStopResponse,
@@ -20,8 +18,6 @@ from app.schemas import (
 )
 
 router = APIRouter(tags=["share"])
-_testing = os.environ.get("TESTING", "").lower() == "true"
-limiter = Limiter(key_func=get_remote_address, enabled=not _testing)
 
 TOKEN_EXPIRY_HOURS = 24
 
@@ -34,9 +30,7 @@ async def create_share_token(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    await verify_trip_ownership(trip_id, user, db)
 
     # Delete old tokens for this trip
     await db.execute(
@@ -66,9 +60,7 @@ async def get_share_token(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    await verify_trip_ownership(trip_id, user, db)
 
     result = await db.execute(
         select(ShareToken).where(
@@ -88,9 +80,7 @@ async def revoke_share_token(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    await verify_trip_ownership(trip_id, user, db)
 
     await db.execute(
         delete(ShareToken).where(ShareToken.trip_id == trip_id)
@@ -117,46 +107,16 @@ async def get_shared_trip(
     if not trip:
         raise HTTPException(status_code=404, detail="Share link not found or expired")
 
-    # Build itinerary (same logic as trips.get_itinerary but without auth)
-    stops_result = await db.execute(
-        select(TripStop)
-        .where(TripStop.trip_id == trip.id)
-        .order_by(TripStop.sort_index)
-    )
-    stops = stops_result.scalars().all()
+    stops, movements, all_activities, movement_by_from, activities_by_stop = await load_itinerary(trip.id, db)
 
-    movements_result = await db.execute(
-        select(Movement).where(Movement.trip_id == trip.id)
-    )
-    movements = movements_result.scalars().all()
-    movement_by_from = {m.from_stop_id: m for m in movements}
-
-    stop_ids = [s.id for s in stops]
-    if stop_ids:
-        from sqlalchemy.orm import selectinload
-        activities_result = await db.execute(
-            select(Activity)
-            .options(selectinload(Activity.photos))
-            .where(Activity.trip_stop_id.in_(stop_ids))
-            .order_by(Activity.sort_index)
+    itinerary_stops = [
+        ItineraryStopResponse(
+            stop=stop,
+            activities=activities_by_stop.get(stop.id, []),
+            movement_to_next=movement_by_from.get(stop.id),
         )
-        all_activities = activities_result.scalars().all()
-    else:
-        all_activities = []
-
-    activities_by_stop: dict[UUID, list] = {}
-    for a in all_activities:
-        activities_by_stop.setdefault(a.trip_stop_id, []).append(a)
-
-    itinerary_stops = []
-    for stop in stops:
-        itinerary_stops.append(
-            ItineraryStopResponse(
-                stop=stop,
-                activities=activities_by_stop.get(stop.id, []),
-                movement_to_next=movement_by_from.get(stop.id),
-            )
-        )
+        for stop in stops
+    ]
 
     budget = compute_budget(stops, all_activities, movements)
     return SharedTripResponse(

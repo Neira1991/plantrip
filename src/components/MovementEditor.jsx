@@ -1,13 +1,6 @@
 import { useState } from 'react'
-
-const TRANSPORT_TYPES = [
-  { value: 'train', label: 'Train', icon: '🚆' },
-  { value: 'car', label: 'Car', icon: '🚗' },
-  { value: 'plane', label: 'Plane', icon: '✈️' },
-  { value: 'bus', label: 'Bus', icon: '🚌' },
-  { value: 'ferry', label: 'Ferry', icon: '⛴️' },
-  { value: 'other', label: 'Other', icon: '📍' },
-]
+import { formatDuration } from '../utils/time'
+import { TRANSPORT_TYPES } from '../data/static/transportTypes'
 
 export default function MovementEditor({ movement, fromStop, toStop, onSave, onDelete }) {
   const [editing, setEditing] = useState(false)
@@ -22,15 +15,6 @@ export default function MovementEditor({ movement, fromStop, toStop, onSave, onD
       durationMinutes: durationMinutes ? parseInt(durationMinutes, 10) : null,
     })
     setEditing(false)
-  }
-
-  function formatDuration(mins) {
-    if (!mins) return ''
-    const h = Math.floor(mins / 60)
-    const m = mins % 60
-    if (h === 0) return `${m}m`
-    if (m === 0) return `${h}h`
-    return `${h}h${m}m`
   }
 
   const transportConfig = TRANSPORT_TYPES.find(t => t.value === movement?.type)

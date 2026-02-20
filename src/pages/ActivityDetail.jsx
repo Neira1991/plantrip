@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import MapboxMap from '../components/MapboxMap'
 import PhotoGallery from '../components/PhotoGallery'
 import { apiAdapter } from '../data/adapters/apiAdapter'
+import { useAsyncLoad } from '../hooks/useAsyncLoad'
 import { formatPrice } from '../utils/currency'
 import './ActivityDetail.css'
 
@@ -22,41 +23,29 @@ export default function ActivityDetail() {
   const location = useLocation()
   const currency = location.state?.currency || 'EUR'
   const [activity, setActivity] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [photosLoading, setPhotosLoading] = useState(false)
   const [editingField, setEditingField] = useState(null)
   const [editValue, setEditValue] = useState('')
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    async function load() {
-      try {
-        const data = await apiAdapter.get(`/activities/${activityId}`)
-        if (cancelled) return
-        setActivity(data)
+  const { loading, error } = useAsyncLoad(async () => {
+    const data = await apiAdapter.get(`/activities/${activityId}`)
+    setActivity(data)
 
-        // Auto-load photos if none exist
-        if (!data.photos || data.photos.length === 0) {
-          setPhotosLoading(true)
-          try {
-            const photos = await apiAdapter.post(`/activities/${activityId}/photos`)
-            if (!cancelled) setActivity(prev => prev ? { ...prev, photos } : prev)
-          } catch {
-            // Photos unavailable
-          } finally {
-            if (!cancelled) setPhotosLoading(false)
-          }
-        }
-      } catch (err) {
-        if (!cancelled) setError(err.message || 'Activity not found')
+    // Auto-load photos if none exist
+    if (!data.photos || data.photos.length === 0) {
+      setPhotosLoading(true)
+      try {
+        const photos = await apiAdapter.post(`/activities/${activityId}/photos`)
+        setActivity(prev => prev ? { ...prev, photos } : prev)
+      } catch {
+        // Photos unavailable
       } finally {
-        if (!cancelled) setLoading(false)
+        setPhotosLoading(false)
       }
     }
-    load()
-    return () => { cancelled = true }
+
+    return data
   }, [activityId])
 
 

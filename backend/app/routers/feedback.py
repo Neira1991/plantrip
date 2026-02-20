@@ -1,16 +1,14 @@
-import os
 from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Activity, ActivityFeedback, ShareToken, Trip, TripStop, TripVersion, User
+from app.dependencies import limiter, verify_trip_ownership
+from app.models import Activity, ActivityFeedback, ShareToken, TripStop, TripVersion, User
 from app.schemas import (
     ActivityFeedbackSummary,
     FeedbackCreate,
@@ -20,8 +18,6 @@ from app.schemas import (
 )
 
 router = APIRouter(tags=["feedback"])
-_testing = os.environ.get("TESTING", "").lower() == "true"
-limiter = Limiter(key_func=get_remote_address, enabled=not _testing)
 
 
 @router.post("/shared/{token}/feedback", response_model=FeedbackResponse, status_code=201)
@@ -93,9 +89,7 @@ async def get_trip_feedback(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    trip = await db.get(Trip, trip_id)
-    if not trip or trip.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    await verify_trip_ownership(trip_id, user, db)
 
     # Get all feedback for this trip via share_token join (catches orphaned feedback)
     feedback_result = await db.execute(

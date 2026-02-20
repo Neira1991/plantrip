@@ -1,14 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { apiAdapter } from '../data/adapters/apiAdapter'
+import { useEscapeKey } from '../hooks/useEscapeKey'
+import { formatDateTime } from '../utils/date'
 import './VersionsPanel.css'
-
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-  })
-}
 
 export default function VersionsPanel({ isOpen, onClose, tripId, onRestored }) {
   const [versions, setVersions] = useState([])
@@ -38,19 +32,15 @@ export default function VersionsPanel({ isOpen, onClose, tripId, onRestored }) {
     }
   }, [isOpen, loadVersions])
 
-  useEffect(() => {
-    function handleEscape(e) {
-      if (e.key === 'Escape' && isOpen) {
-        if (confirmRestore) {
-          setConfirmRestore(null)
-        } else {
-          onClose()
-        }
-      }
+  const handleEscape = useCallback(() => {
+    if (confirmRestore) {
+      setConfirmRestore(null)
+    } else {
+      onClose()
     }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen, onClose, confirmRestore])
+  }, [confirmRestore, onClose])
+
+  useEscapeKey(handleEscape, isOpen)
 
   async function handleSave() {
     if (saving || !label.trim()) return
@@ -152,7 +142,7 @@ export default function VersionsPanel({ isOpen, onClose, tripId, onRestored }) {
                     <span className="version-badge">v{version.versionNumber}</span>
                     <div className="version-item-details">
                       <span className="version-label">{version.label || 'Untitled'}</span>
-                      <span className="version-date">{formatDate(version.createdAt)}</span>
+                      <span className="version-date">{formatDateTime(version.createdAt)}</span>
                     </div>
                   </div>
                   <div className="version-item-actions">

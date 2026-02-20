@@ -1,22 +1,18 @@
-import os
 import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import hash_password
 from app.database import get_db
+from app.dependencies import limiter
 from app.email import send_password_reset_email
 from app.models import PasswordResetToken, User
 from app.schemas import ForgotPasswordRequest, ResetPasswordRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-_testing = os.environ.get("TESTING", "").lower() == "true"
-limiter = Limiter(key_func=get_remote_address, enabled=not _testing)
 
 
 @router.post("/forgot-password")

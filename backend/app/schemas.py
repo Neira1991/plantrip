@@ -4,6 +4,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, field_validator
 
+VALID_ROLES = {"admin", "designer"}
+
+
+def validate_role_value(v: str) -> str:
+    if v not in VALID_ROLES:
+        raise ValueError(f"Role must be one of: {', '.join(sorted(VALID_ROLES))}")
+    return v
+
 
 # --- Auth ---
 
@@ -431,9 +439,7 @@ class InviteCreate(BaseModel):
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: str) -> str:
-        if v not in ["admin", "designer"]:
-            raise ValueError("Role must be 'admin' or 'designer'")
-        return v
+        return validate_role_value(v)
 
 
 class InviteResponse(BaseModel):
@@ -479,9 +485,7 @@ class UpdateMemberRoleRequest(BaseModel):
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: str) -> str:
-        if v not in ["admin", "designer"]:
-            raise ValueError("Role must be 'admin' or 'designer'")
-        return v
+        return validate_role_value(v)
 
 
 # --- Feedback ---

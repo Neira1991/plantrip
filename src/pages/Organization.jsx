@@ -2,53 +2,11 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrgStore } from '../stores/orgStore'
 import { useAuthStore } from '../stores/authStore'
+import { useToast } from '../hooks/useToast'
+import ConfirmDialog from '../components/ConfirmDialog'
 import InviteMemberModal from '../components/InviteMemberModal'
+import { formatDateTime } from '../utils/date'
 import './Organization.css'
-
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
-}
-
-function DeleteConfirm({ onConfirm, onCancel }) {
-  return (
-    <div className="delete-confirm">
-      <p className="delete-confirm-text">
-        Are you sure? All members will lose access to organization trips.
-      </p>
-      <div className="delete-confirm-actions">
-        <button type="button" className="btn-delete-cancel" onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="button" className="btn-delete-confirm" onClick={onConfirm}>
-          Delete Organization
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function LeaveConfirm({ onConfirm, onCancel }) {
-  return (
-    <div className="delete-confirm">
-      <p className="delete-confirm-text">
-        Are you sure you want to leave this organization?
-      </p>
-      <div className="delete-confirm-actions">
-        <button type="button" className="btn-delete-cancel" onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="button" className="btn-delete-confirm" onClick={onConfirm}>
-          Leave Organization
-        </button>
-      </div>
-    </div>
-  )
-}
 
 export default function Organization() {
   const navigate = useNavigate()
@@ -84,7 +42,7 @@ export default function Organization() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [editingName, setEditingName] = useState(false)
   const [newName, setNewName] = useState('')
-  const [toast, setToast] = useState(null)
+  const { toast, showToast } = useToast()
 
   const isAdmin = user?.organization?.role === 'admin'
 
@@ -203,11 +161,6 @@ export default function Organization() {
     }
   }
 
-  function showToast(message) {
-    setToast(message)
-    setTimeout(() => setToast(null), 3000)
-  }
-
   // No organization state
   if (!isLoading && !organization) {
     return (
@@ -319,7 +272,9 @@ export default function Organization() {
             <div className="org-header-actions">
               {isAdmin ? (
                 showDeleteConfirm ? (
-                  <DeleteConfirm
+                  <ConfirmDialog
+                    message="Are you sure? All members will lose access to organization trips."
+                    confirmLabel="Delete Organization"
                     onConfirm={handleDelete}
                     onCancel={() => setShowDeleteConfirm(false)}
                   />
@@ -333,7 +288,9 @@ export default function Organization() {
                 )
               ) : (
                 showLeaveConfirm ? (
-                  <LeaveConfirm
+                  <ConfirmDialog
+                    message="Are you sure you want to leave this organization?"
+                    confirmLabel="Leave Organization"
                     onConfirm={handleLeave}
                     onCancel={() => setShowLeaveConfirm(false)}
                   />
@@ -392,7 +349,7 @@ export default function Organization() {
                       </span>
                     </td>
                     <td className="member-trips">{member.tripCount || 0}</td>
-                    <td className="member-date">{formatDate(member.createdAt)}</td>
+                    <td className="member-date">{formatDateTime(member.createdAt)}</td>
                     {isAdmin && (
                       <td>
                         <div className="member-actions">
@@ -437,7 +394,7 @@ export default function Organization() {
                       {invite.role}
                     </span>
                     <span className="invite-expires">
-                      Expires {formatDate(invite.expiresAt)}
+                      Expires {formatDateTime(invite.expiresAt)}
                     </span>
                   </div>
                   <button
@@ -482,7 +439,7 @@ export default function Organization() {
                           {trip.status}
                         </span>
                       </td>
-                      <td className="trip-date">{formatDate(trip.createdAt)}</td>
+                      <td className="trip-date">{formatDateTime(trip.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,10 +1,7 @@
-import os
 import secrets
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,13 +15,12 @@ from app.auth import (
 )
 from app.config import settings
 from app.database import get_db
+from app.dependencies import limiter
 from app.email import send_email_verification, send_welcome_email
 from app.models import Organization, OrganizationMember, User
 from app.schemas import OrgInfo, UserLogin, UserRegister, UserResponse, VerifyEmailRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-_testing = os.environ.get("TESTING", "").lower() == "true"
-limiter = Limiter(key_func=get_remote_address, enabled=not _testing)
 
 
 def _set_auth_cookies(response: Response, user: User) -> None:
