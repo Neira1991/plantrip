@@ -20,7 +20,10 @@ export default function MapboxMap({ countryName, stops = [], movements = [], act
   const markersRef = useRef([])
   const activityMarkersRef = useRef([])
   const stopsRef = useRef(stops)
-  stopsRef.current = stops
+
+  useEffect(() => {
+    stopsRef.current = stops
+  })
 
   // Initialize map
   useEffect(() => {
@@ -120,15 +123,15 @@ export default function MapboxMap({ countryName, stops = [], movements = [], act
         if (!style) return
         ;(style.layers || []).forEach(layer => {
           if (layer.id.startsWith('route-')) {
-            try { m.removeLayer(layer.id) } catch {}
+            try { m.removeLayer(layer.id) } catch { /* layer already removed */ }
           }
         })
         Object.keys(style.sources || {}).forEach(src => {
           if (src.startsWith('route-')) {
-            try { m.removeSource(src) } catch {}
+            try { m.removeSource(src) } catch { /* source already removed */ }
           }
         })
-      } catch {}
+      } catch { /* style not ready */ }
     }
 
     function drawRoutes() {
@@ -173,7 +176,7 @@ export default function MapboxMap({ countryName, stops = [], movements = [], act
             source: sourceId,
             paint: paintProps,
           })
-        } catch {}
+        } catch { /* source/layer conflict */ }
       }
     }
 

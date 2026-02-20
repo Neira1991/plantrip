@@ -31,9 +31,8 @@ export default function CountryAutocomplete({ onSelect, onFirstMatch, initialVal
   }, [query])
 
   useEffect(() => {
-    setActiveIndex(-1)
     onFirstMatch?.(filtered.length > 0 ? filtered[0] : null)
-  }, [filtered])
+  }, [filtered, onFirstMatch])
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -61,6 +60,7 @@ export default function CountryAutocomplete({ onSelect, onFirstMatch, initialVal
 
   function handleChange(e) {
     setQuery(e.target.value)
+    setActiveIndex(-1)
     setIsOpen(true)
     if (!e.target.value.trim()) {
       onSelect(null)

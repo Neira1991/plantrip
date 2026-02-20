@@ -6,7 +6,7 @@ import { activityRepository } from '../data/repositories/activityRepository'
 
 export const useItineraryStore = create(
   devtools(
-    (set, get) => ({
+    (set) => ({
       stops: [],
       movements: [],
       activities: [],

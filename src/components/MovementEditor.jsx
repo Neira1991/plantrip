@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { formatDuration } from '../utils/time'
 import { TRANSPORT_TYPES } from '../data/static/transportTypes'
 
-export default function MovementEditor({ movement, fromStop, toStop, onSave, onDelete }) {
+export default function MovementEditor({ movement, onSave, onDelete }) {
   const [editing, setEditing] = useState(false)
   const [type, setType] = useState(movement?.type || 'train')
   const [carrier, setCarrier] = useState(movement?.carrier || '')

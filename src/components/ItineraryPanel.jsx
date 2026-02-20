@@ -8,7 +8,6 @@ export default function ItineraryPanel({
   currency,
   budget,
   onClose,
-  onAddStop,
   onReorderStop,
   onRemoveStop,
   onAddActivity,

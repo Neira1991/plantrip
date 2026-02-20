@@ -83,10 +83,6 @@ test.describe('Timeline', () => {
     await page.goto(`/trip/${trip.id}`)
     await expect(page.getByTestId('trip-header-name')).toBeVisible()
 
-    // Initially no date range shown (no stops)
-    const headerDates = page.locator('.trip-header-dates')
-    const initialDatesCount = await headerDates.count()
-
     // Add a stop with 2 nights via API
     await api.createStop(trip.id, { name: 'Paris', lng: 2.35, lat: 48.86, nights: 2 })
 

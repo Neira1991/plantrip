@@ -33,7 +33,7 @@ export const tripStopRepository = {
     })
   },
 
-  async deleteByTripId(tripId) {
+  async deleteByTripId() {
     // No-op: cascade handled by backend when trip is deleted
   },
 }

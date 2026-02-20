@@ -29,7 +29,6 @@ export default function TripDetail() {
 
   const tripId = trip?.id || null
   const {
-    itinerary,
     timeline,
     budget,
     stops,
@@ -51,7 +50,6 @@ export default function TripDetail() {
   const [mode, setMode] = useState(isNew ? 'edit' : 'view')
   const [name, setName] = useState('')
   const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
   const [status, setStatus] = useState('planning')
   const [notes, setNotes] = useState('')
   const [currency, setCurrency] = useState('EUR')
@@ -73,14 +71,12 @@ export default function TripDetail() {
     if (trip) {
       setName(trip.name || '')
       setStartDate(trip.startDate || '')
-      setEndDate(trip.endDate || '')
       setStatus(trip.status || 'planning')
       setNotes(trip.notes || '')
       setCurrency(trip.currency || 'EUR')
     } else if (isNew && country) {
       setName(`${country.name} Trip`)
       setStartDate('')
-      setEndDate('')
       setStatus('planning')
       setNotes('')
       setCurrency('EUR')
@@ -154,7 +150,6 @@ export default function TripDetail() {
     } else {
       setName(trip.name || '')
       setStartDate(trip.startDate || '')
-      setEndDate(trip.endDate || '')
       setStatus(trip.status || 'planning')
       setNotes(trip.notes || '')
       setCurrency(trip.currency || 'EUR')
@@ -211,7 +206,7 @@ export default function TripDetail() {
       } catch {
         setSharePopup({ url: shareUrl, copied: false })
       }
-    } catch (err) {
+    } catch {
       showToast('Failed to create share link')
     } finally {
       setShareLoading(false)

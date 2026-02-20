@@ -18,7 +18,6 @@ export default function Organization() {
     orgTrips,
     stats,
     isLoading,
-    error,
     loadOrganization,
     createOrganization,
     updateOrganization,
@@ -32,7 +31,6 @@ export default function Organization() {
     loadStats,
     loadInvites,
     leaveOrganization,
-    clearError,
   } = useOrgStore()
 
   const [orgName, setOrgName] = useState('')

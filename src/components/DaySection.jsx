@@ -7,7 +7,7 @@ import { formatDuration } from '../utils/time'
 import { TRANSPORT_TYPES } from '../data/static/transportTypes'
 import './DaySection.css'
 
-export default function DaySection({ day, tripId, currency, onAddActivity, onUpdateActivity, onRemoveActivity, onReorderActivity, onMoveUp, onMoveDown, onRemoveStop, onUpdateNights, onUpdateStopPrice, onAddMovement, onUpdateMovement, onRemoveMovement }) {
+export default function DaySection({ day, tripId, currency, onAddActivity, onUpdateActivity, onRemoveActivity, onMoveUp, onMoveDown, onRemoveStop, onUpdateNights, onUpdateStopPrice, onAddMovement, onUpdateMovement, onRemoveMovement }) {
   const [movementForm, setMovementForm] = useState(null)
   const [newActivityTitle, setNewActivityTitle] = useState('')
 

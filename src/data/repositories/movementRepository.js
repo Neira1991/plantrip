@@ -28,11 +28,11 @@ export const movementRepository = {
     await apiAdapter.del(`/movements/${movementId}`)
   },
 
-  async deleteByTripId(tripId) {
+  async deleteByTripId() {
     // No-op: cascade handled by backend
   },
 
-  async deleteByStopId(stopId) {
+  async deleteByStopId() {
     // No-op: cascade handled by backend
   },
 }

@@ -64,7 +64,7 @@ export const activityRepository = {
     return this.getByStopId(stopId)
   },
 
-  async deleteByStopId(stopId) {
+  async deleteByStopId() {
     // No-op: cascade handled by backend
   },
 }

@@ -37,7 +37,7 @@ export const tripRepository = {
 
   async update(id, updates) {
     // Strip endDate/end_date - it's read-only, computed server-side
-    const { endDate, end_date, ...payload } = updates
+    const { endDate: _endDate, end_date: _end_date, ...payload } = updates
     return apiAdapter.put(`/trips/${id}`, payload)
   },
 
