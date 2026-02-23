@@ -14,11 +14,13 @@ router = APIRouter(tags=["movements"])
 
 
 async def _verify_movement_ownership(movement_id: UUID, user: User, db: AsyncSession) -> Movement:
-    movement = await db.get(Movement, movement_id)
+    result = await db.execute(
+        select(Movement)
+        .join(Trip, Movement.trip_id == Trip.id)
+        .where(Movement.id == movement_id, Trip.user_id == user.id)
+    )
+    movement = result.scalars().first()
     if not movement:
-        raise HTTPException(status_code=404, detail="Movement not found")
-    trip = await db.get(Trip, movement.trip_id)
-    if not trip or trip.user_id != user.id:
         raise HTTPException(status_code=404, detail="Movement not found")
     return movement
 

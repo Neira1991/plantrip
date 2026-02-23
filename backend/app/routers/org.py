@@ -206,39 +206,37 @@ async def list_members(
     db: AsyncSession = Depends(get_db),
 ):
     """List all organization members with trip counts."""
-    # Get all members with user info
+    # Single query: members + user info + trip count via LEFT JOIN + GROUP BY
+    trip_count_sub = (
+        select(Trip.user_id, func.count(Trip.id).label("trip_count"))
+        .where(Trip.organization_id == membership.organization_id)
+        .group_by(Trip.user_id)
+        .subquery()
+    )
+
     result = await db.execute(
-        select(OrganizationMember, User)
+        select(
+            OrganizationMember,
+            User,
+            func.coalesce(trip_count_sub.c.trip_count, 0).label("trip_count"),
+        )
         .join(User, OrganizationMember.user_id == User.id)
+        .outerjoin(trip_count_sub, OrganizationMember.user_id == trip_count_sub.c.user_id)
         .where(OrganizationMember.organization_id == membership.organization_id)
         .order_by(OrganizationMember.created_at)
     )
-    members_with_users = result.all()
+    rows = result.all()
 
-    # Get trip counts for each member
-    trip_counts = {}
-    for member, _ in members_with_users:
-        count_result = await db.execute(
-            select(func.count())
-            .select_from(Trip)
-            .where(
-                Trip.user_id == member.user_id,
-                Trip.organization_id == membership.organization_id,
-            )
-        )
-        trip_counts[member.user_id] = count_result.scalar() or 0
-
-    # Build response
     return [
         OrganizationMemberResponse(
             id=member.id,
             user_id=member.user_id,
             email=user.email,
             role=member.role,
-            trip_count=trip_counts.get(member.user_id, 0),
+            trip_count=trip_count,
             created_at=member.created_at,
         )
-        for member, user in members_with_users
+        for member, user, trip_count in rows
     ]
 
 
@@ -273,16 +271,12 @@ async def update_member_role(
     await db.commit()
     await db.refresh(target_member)
 
-    # Get trip count
-    trip_count_result = await db.execute(
+    # Get trip count in single query
+    trip_count = (await db.execute(
         select(func.count())
         .select_from(Trip)
-        .where(
-            Trip.user_id == user_id,
-            Trip.organization_id == membership.organization_id,
-        )
-    )
-    trip_count = trip_count_result.scalar() or 0
+        .where(Trip.user_id == user_id, Trip.organization_id == membership.organization_id)
+    )).scalar() or 0
 
     return OrganizationMemberResponse(
         id=target_member.id,

@@ -70,7 +70,7 @@ async def clean_db():
     """Clean all tables before each test to ensure isolation."""
     async with test_async_session() as session:
         # Truncate in reverse FK order to avoid constraint violations
-        await session.execute(text("TRUNCATE activity_feedback, trip_versions, activities, movements, trip_stops, trips, organization_invites, organization_members, organizations, share_tokens, users CASCADE"))
+        await session.execute(text("TRUNCATE activity_feedback, trip_versions, activity_photos, activities, movements, trip_stops, trips, organization_invites, organization_members, organizations, share_tokens, password_reset_tokens, users CASCADE"))
         await session.commit()
     yield
 

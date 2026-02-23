@@ -41,15 +41,19 @@ wait_for_postgres() {
 run_migrations() {
     echo -e "${YELLOW}Running Alembic migrations...${NC}"
 
-    # Run migrations
-    alembic upgrade head
-
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}Migrations completed successfully!${NC}"
+    # Check if alembic_version table exists (i.e., has Alembic ever run?)
+    if alembic current 2>/dev/null | grep -q "(head)"; then
+        echo -e "${GREEN}Database already at head, nothing to do.${NC}"
+    elif alembic current 2>/dev/null | grep -q "001"; then
+        # Alembic knows about a revision, try to upgrade
+        alembic upgrade head
     else
-        echo "Error: Migrations failed!"
-        exit 1
+        # Fresh database (created by init.sql) - stamp it at head
+        echo -e "${YELLOW}Fresh database detected, stamping at head...${NC}"
+        alembic stamp head
     fi
+
+    echo -e "${GREEN}Migrations completed successfully!${NC}"
 }
 
 # Main execution

@@ -10,6 +10,7 @@ from app.auth import get_current_user
 from app.database import get_db
 from app.dependencies import verify_trip_ownership
 from app.models import Activity, ActivityPhoto, Movement, TripStop, TripVersion, User
+from app.routers.stops import recalculate_end_date
 from app.schemas import (
     VersionCreate,
     VersionDetailResponse,
@@ -307,6 +308,7 @@ async def restore_version(
         )
         db.add(movement)
 
+    await recalculate_end_date(trip_id, db)
     await db.commit()
     await db.refresh(version)
     return version

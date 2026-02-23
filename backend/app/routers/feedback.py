@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import get_current_user
 from app.database import get_db
 from app.dependencies import limiter, verify_trip_ownership
-from app.models import Activity, ActivityFeedback, ShareToken, TripStop, TripVersion, User
+from app.models import Activity, ActivityFeedback, ShareToken, TripStop, TripVersion, Trip, User
 from app.schemas import (
     ActivityFeedbackSummary,
     FeedbackCreate,
@@ -57,6 +57,7 @@ async def create_feedback(
     latest_version = version_result.scalars().first()
 
     feedback = ActivityFeedback(
+        trip_id=share_token.trip_id,
         share_token_id=share_token.id,
         activity_id=data.activity_id,
         version_id=latest_version.id if latest_version else None,
@@ -91,11 +92,10 @@ async def get_trip_feedback(
 ):
     await verify_trip_ownership(trip_id, user, db)
 
-    # Get all feedback for this trip via share_token join (catches orphaned feedback)
+    # Get all feedback for this trip directly via trip_id FK
     feedback_result = await db.execute(
         select(ActivityFeedback)
-        .join(ShareToken, ActivityFeedback.share_token_id == ShareToken.id)
-        .where(ShareToken.trip_id == trip_id)
+        .where(ActivityFeedback.trip_id == trip_id)
         .order_by(ActivityFeedback.created_at.desc())
     )
     all_feedback = feedback_result.scalars().all()

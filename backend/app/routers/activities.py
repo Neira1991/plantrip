@@ -23,14 +23,14 @@ router = APIRouter(tags=["activities"])
 
 
 async def _verify_activity_ownership(activity_id: UUID, user: User, db: AsyncSession) -> Activity:
-    activity = await db.get(Activity, activity_id)
+    result = await db.execute(
+        select(Activity)
+        .join(TripStop, Activity.trip_stop_id == TripStop.id)
+        .join(Trip, TripStop.trip_id == Trip.id)
+        .where(Activity.id == activity_id, Trip.user_id == user.id)
+    )
+    activity = result.scalars().first()
     if not activity:
-        raise HTTPException(status_code=404, detail="Activity not found")
-    stop = await db.get(TripStop, activity.trip_stop_id)
-    if not stop:
-        raise HTTPException(status_code=404, detail="Activity not found")
-    trip = await db.get(Trip, stop.trip_id)
-    if not trip or trip.user_id != user.id:
         raise HTTPException(status_code=404, detail="Activity not found")
     return activity
 

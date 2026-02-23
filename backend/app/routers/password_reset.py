@@ -11,6 +11,7 @@ from app.dependencies import limiter
 from app.email import send_password_reset_email
 from app.models import PasswordResetToken, User
 from app.schemas import ForgotPasswordRequest, ResetPasswordRequest
+from app.token_utils import hash_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -31,15 +32,15 @@ async def forgot_password(
     user = result.scalars().first()
 
     if user:
-        token = secrets.token_urlsafe(48)
+        raw_token = secrets.token_urlsafe(48)
         reset = PasswordResetToken(
             user_id=user.id,
-            token=token,
+            token_hash=hash_token(raw_token),
             expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
         )
         db.add(reset)
         await db.commit()
-        await send_password_reset_email(user.email, token)
+        await send_password_reset_email(user.email, raw_token)
 
     # Always return 200
     return {"status": "ok"}
@@ -57,7 +58,7 @@ async def reset_password(
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
 
     result = await db.execute(
-        select(PasswordResetToken).where(PasswordResetToken.token == data.token)
+        select(PasswordResetToken).where(PasswordResetToken.token_hash == hash_token(data.token))
     )
     reset_token = result.scalars().first()
 

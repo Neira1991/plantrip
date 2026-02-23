@@ -1,7 +1,22 @@
 import uuid
 from datetime import date, datetime, time
 
-from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, Float, ForeignKey, Integer, String, Text, Time, UniqueConstraint, func
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    Time,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -15,11 +30,11 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
-    hashed_password: Mapped[str] = mapped_column(String(128), nullable=False)
-    email_verified: Mapped[bool] = mapped_column(default=False)
+    hashed_password: Mapped[str] = mapped_column(String(256), nullable=False)
+    email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     email_verification_token: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
     email_verification_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     trips: Mapped[list["Trip"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
     organization_memberships: Mapped[list["OrganizationMember"]] = relationship(back_populates="user", cascade="all, delete-orphan")
@@ -27,6 +42,15 @@ class User(Base):
 
 class Trip(Base):
     __tablename__ = "trips"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('planning', 'booked', 'completed', 'cancelled', 'active')",
+            name="ck_trips_status",
+        ),
+        CheckConstraint("currency ~ '^[A-Z]{3}$'", name="ck_trips_currency"),
+        Index("idx_trips_user_created", "user_id", "created_at"),
+        Index("idx_trips_organization_id", "organization_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -38,14 +62,15 @@ class Trip(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="planning")
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
     owner: Mapped["User"] = relationship(back_populates="trips")
     organization: Mapped["Organization | None"] = relationship(back_populates="trips")
     stops: Mapped[list["TripStop"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
     movements: Mapped[list["Movement"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
     versions: Mapped[list["TripVersion"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
+    feedback: Mapped[list["ActivityFeedback"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
 
 
 class TripStop(Base):
@@ -63,9 +88,9 @@ class TripStop(Base):
     lat: Mapped[float] = mapped_column(Float, nullable=False)
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     nights: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    price_per_night: Mapped[float | None] = mapped_column(Float, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    price_per_night: Mapped[float | None] = mapped_column(Numeric(12, 2, asdecimal=False), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
     trip: Mapped["Trip"] = relationship(back_populates="stops")
     activities: Mapped[list["Activity"]] = relationship(back_populates="stop", cascade="all, delete-orphan")
@@ -80,8 +105,11 @@ class TripStop(Base):
 class Movement(Base):
     __tablename__ = "movements"
     __table_args__ = (
-        UniqueConstraint("from_stop_id", "to_stop_id", name="uq_movement_stops"),
         CheckConstraint("from_stop_id != to_stop_id", name="ck_movement_different_stops"),
+        CheckConstraint(
+            "type IN ('train', 'car', 'plane', 'bus', 'ferry', 'walk', 'other')",
+            name="ck_movement_type",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -95,9 +123,9 @@ class Movement(Base):
     carrier: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     booking_ref: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    price: Mapped[float | None] = mapped_column(Float, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    price: Mapped[float | None] = mapped_column(Numeric(12, 2, asdecimal=False), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
     trip: Mapped["Trip"] = relationship(back_populates="movements")
     from_stop: Mapped["TripStop"] = relationship(foreign_keys=[from_stop_id], back_populates="movements_from")
@@ -123,7 +151,7 @@ class Activity(Base):
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     category: Mapped[str] = mapped_column(String(100), nullable=False, default="")
     opening_hours: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    price: Mapped[float | None] = mapped_column(Numeric(12, 2, asdecimal=False), nullable=True)
     tips: Mapped[str] = mapped_column(Text, nullable=False, default="")
     website_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     phone: Mapped[str] = mapped_column(String(50), nullable=False, default="")
@@ -131,8 +159,8 @@ class Activity(Base):
     guide_info: Mapped[str] = mapped_column(Text, nullable=False, default="")
     transport_info: Mapped[str] = mapped_column(Text, nullable=False, default="")
     opentripmap_xid: Mapped[str] = mapped_column(String(100), nullable=False, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
     stop: Mapped["TripStop"] = relationship(back_populates="activities")
     photos: Mapped[list["ActivityPhoto"]] = relationship(back_populates="activity", cascade="all, delete-orphan")
@@ -141,6 +169,9 @@ class Activity(Base):
 
 class ActivityPhoto(Base):
     __tablename__ = "activity_photos"
+    __table_args__ = (
+        UniqueConstraint("activity_id", "sort_index", name="uq_activity_photo_sort"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     activity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("activities.id", ondelete="CASCADE"), nullable=False)
@@ -153,7 +184,7 @@ class ActivityPhoto(Base):
     width: Mapped[int | None] = mapped_column(Integer, nullable=True)
     height: Mapped[int | None] = mapped_column(Integer, nullable=True)
     sort_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     activity: Mapped["Activity"] = relationship(back_populates="photos")
 
@@ -164,8 +195,8 @@ class Organization(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
     members: Mapped[list["OrganizationMember"]] = relationship(back_populates="organization", cascade="all, delete-orphan")
     invites: Mapped[list["OrganizationInvite"]] = relationship(back_populates="organization", cascade="all, delete-orphan")
@@ -176,13 +207,14 @@ class OrganizationMember(Base):
     __tablename__ = "organization_members"
     __table_args__ = (
         UniqueConstraint("organization_id", "user_id", name="uq_org_member"),
+        Index("idx_org_members_user_id", "user_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="designer")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     organization: Mapped["Organization"] = relationship(back_populates="members")
     user: Mapped["User"] = relationship(back_populates="organization_memberships")
@@ -198,7 +230,7 @@ class OrganizationInvite(Base):
     token: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     organization: Mapped["Organization"] = relationship(back_populates="invites")
 
@@ -211,22 +243,25 @@ class ShareToken(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     token: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     trip: Mapped["Trip"] = relationship("Trip")
     user: Mapped["User"] = relationship("User")
-    feedback: Mapped[list["ActivityFeedback"]] = relationship(back_populates="share_token", cascade="all, delete-orphan")
+    feedback: Mapped[list["ActivityFeedback"]] = relationship(back_populates="share_token")
 
 
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
+    __table_args__ = (
+        Index("idx_password_reset_tokens_user_id", "user_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    token: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
+    token_hash: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     user: Mapped["User"] = relationship("User")
 
@@ -238,17 +273,19 @@ class ActivityFeedback(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    share_token_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("share_tokens.id", ondelete="CASCADE"), nullable=False, index=True)
+    trip_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    share_token_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("share_tokens.id", ondelete="SET NULL"), nullable=True, index=True)
     activity_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("activities.id", ondelete="SET NULL"), nullable=True, index=True)
     version_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("trip_versions.id", ondelete="SET NULL"), nullable=True, index=True)
-    activity_title: Mapped[str] = mapped_column(String(200), server_default="")
+    activity_title: Mapped[str] = mapped_column(String(200), nullable=False, server_default="")
     viewer_session_id: Mapped[str] = mapped_column(String(64), nullable=False)
     viewer_name: Mapped[str] = mapped_column(String(100), nullable=False, server_default="Anonymous")
     sentiment: Mapped[str] = mapped_column(String(10), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    share_token: Mapped["ShareToken"] = relationship(back_populates="feedback")
+    trip: Mapped["Trip"] = relationship(back_populates="feedback")
+    share_token: Mapped["ShareToken | None"] = relationship(back_populates="feedback")
     activity: Mapped["Activity | None"] = relationship(back_populates="feedback")
     version: Mapped["TripVersion | None"] = relationship("TripVersion", back_populates="feedback")
 
@@ -264,7 +301,7 @@ class TripVersion(Base):
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     label: Mapped[str] = mapped_column(String(200), nullable=False, server_default="")
     snapshot_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     trip: Mapped["Trip"] = relationship(back_populates="versions")
     feedback: Mapped[list["ActivityFeedback"]] = relationship(back_populates="version")

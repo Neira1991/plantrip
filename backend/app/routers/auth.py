@@ -19,6 +19,7 @@ from app.dependencies import limiter
 from app.email import send_email_verification, send_welcome_email
 from app.models import Organization, OrganizationMember, User
 from app.schemas import OrgInfo, UserLogin, UserRegister, UserResponse, VerifyEmailRequest
+from app.token_utils import hash_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -66,7 +67,7 @@ async def register(request: Request, data: UserRegister, response: Response, db:
     user = User(
         email=normalized_email,
         hashed_password=hash_password(data.password),
-        email_verification_token=verification_token,
+        email_verification_token=hash_token(verification_token),
         email_verification_sent_at=datetime.now(timezone.utc),
     )
     db.add(user)
@@ -173,7 +174,7 @@ async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(
 async def verify_email(data: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
     """Verify email address using token."""
     result = await db.execute(
-        select(User).where(User.email_verification_token == data.token)
+        select(User).where(User.email_verification_token == hash_token(data.token))
     )
     user = result.scalars().first()
     if not user:
@@ -196,10 +197,10 @@ async def resend_verification(
     if user.email_verified:
         return {"status": "already_verified"}
 
-    token = secrets.token_urlsafe(48)
-    user.email_verification_token = token
+    raw_token = secrets.token_urlsafe(48)
+    user.email_verification_token = hash_token(raw_token)
     user.email_verification_sent_at = datetime.now(timezone.utc)
     await db.commit()
 
-    await send_email_verification(user.email, token)
+    await send_email_verification(user.email, raw_token)
     return {"status": "sent"}
